@@ -14,6 +14,7 @@ final class MP_RRGC_Admin {
 	private const GROUP_COMMON = 'mp_rrgc_common_group';
 	private const GROUP_YK     = 'mp_rrgc_yk_group';
 	private const GROUP_RB     = 'mp_rrgc_rb_group';
+	private const AJAX_NONCE_ACTION = 'mp_rrgc_admin_ajax';
 
 	/** @var bool */
 	private static $inited = false;
@@ -30,6 +31,9 @@ final class MP_RRGC_Admin {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'on_admin_init' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
+		add_action( 'wp_ajax_mp_rrgc_inspect_product', array( __CLASS__, 'ajax_inspect_product' ) );
+		add_action( 'wp_ajax_mp_rrgc_inspect_order_yk', array( __CLASS__, 'ajax_inspect_order_yk' ) );
+		add_action( 'wp_ajax_mp_rrgc_inspect_order_rb', array( __CLASS__, 'ajax_inspect_order_rb' ) );
 	}
 
 	public static function register_menu(): void {
@@ -65,6 +69,14 @@ final class MP_RRGC_Admin {
 			array( 'jquery' ),
 			MP_REPLACE_RECEIPT_GIFT_CARD_VERSION,
 			true
+		);
+		wp_localize_script(
+			'mp-rrgc-admin',
+			'mpRrgcAdmin',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( self::AJAX_NONCE_ACTION ),
+			)
 		);
 	}
 
@@ -415,7 +427,66 @@ final class MP_RRGC_Admin {
 
 	private static function render_tab_diagnostics(): void {
 		echo '<h2>' . esc_html__( 'Diagnostics', 'mp-replace-receipt-gift-card' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Diagnostics and inspectors will be added in later steps.', 'mp-replace-receipt-gift-card' ) . '</p>';
+		echo '<p>' . esc_html__( 'Local diagnostics only. No API calls are sent.', 'mp-replace-receipt-gift-card' ) . '</p>';
+
+		echo '<table class="form-table" role="presentation"><tbody>';
+		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-product-id">' . esc_html__( 'Inspect product by ID', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-inspect-product-id" type="number" min="1" class="regular-text" placeholder="123"> ';
+		echo '<button id="mp-rrgc-inspect-product-btn" type="button" class="button">' . esc_html__( 'Inspect product', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-order-yk-id">' . esc_html__( 'Inspect order for YooKassa', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-inspect-order-yk-id" type="number" min="1" class="regular-text" placeholder="1001"> ';
+		echo '<button id="mp-rrgc-inspect-order-yk-btn" type="button" class="button">' . esc_html__( 'Inspect YK order', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
+
+		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-order-rb-id">' . esc_html__( 'Inspect order for Robokassa', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-inspect-order-rb-id" type="number" min="1" class="regular-text" placeholder="1001"> ';
+		echo '<button id="mp-rrgc-inspect-order-rb-btn" type="button" class="button">' . esc_html__( 'Inspect RB order', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
+		echo '</tbody></table>';
+
+		echo '<h3>' . esc_html__( 'Result', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<pre id="mp-rrgc-diagnostics-output" style="max-height:420px;overflow:auto;background:#fff;border:1px solid #ccd0d4;padding:12px;"></pre>';
+	}
+
+	public static function ajax_inspect_product(): void {
+		self::assert_ajax_permissions();
+		$product_id = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0;
+
+		if ( $product_id < 1 ) {
+			wp_send_json_error( array( 'error' => 'invalid_product_id' ), 400 );
+		}
+
+		$product = wc_get_product( $product_id );
+		if ( ! $product instanceof WC_Product ) {
+			wp_send_json_success(
+				array(
+					'product_found' => false,
+					'is_gift'       => false,
+					'reasons'       => array( 'product_not_found' ),
+				)
+			);
+		}
+
+		$is_gift = MP_RRGC_Gift_Detector::is_gift_product( $product );
+		$reasons = MP_RRGC_Gift_Detector::get_detection_reasons( $product );
+
+		wp_send_json_success(
+			array(
+				'product_found' => true,
+				'product_id'    => $product_id,
+				'is_gift'       => (bool) $is_gift,
+				'reasons'       => array_values( array_map( 'strval', (array) $reasons ) ),
+			)
+		);
+	}
+
+	public static function ajax_inspect_order_yk(): void {
+		self::assert_ajax_permissions();
+		self::ajax_inspect_order_common( 'yookassa' );
+	}
+
+	public static function ajax_inspect_order_rb(): void {
+		self::assert_ajax_permissions();
+		self::ajax_inspect_order_common( 'robokassa' );
 	}
 
 	private static function register_settings(): void {
@@ -632,6 +703,102 @@ final class MP_RRGC_Admin {
 
 		ksort( $result );
 		return $result;
+	}
+
+	private static function assert_ajax_permissions(): void {
+		check_ajax_referer( self::AJAX_NONCE_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'error' => 'forbidden' ), 403 );
+		}
+	}
+
+	private static function ajax_inspect_order_common( string $provider ): void {
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		if ( $order_id < 1 ) {
+			wp_send_json_error( array( 'error' => 'invalid_order_id' ), 400 );
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order instanceof WC_Order ) {
+			wp_send_json_success(
+				array(
+					'order_found' => false,
+					'order_id'    => $order_id,
+				)
+			);
+		}
+
+		$split = MP_RRGC_Gift_Detector::split_order_items( $order );
+		$preview_items = array();
+		$line_items = $order->get_items( 'line_item' );
+		$gift_map = array_fill_keys( array_keys( $split['gift'] ), true );
+
+		foreach ( $line_items as $item_id => $item ) {
+			if ( ! $item instanceof WC_Order_Item_Product ) {
+				continue;
+			}
+			$is_gift = isset( $gift_map[ (int) $item_id ] );
+			$preview_items[] = array(
+				'item_id'          => (int) $item_id,
+				'name'             => $item->get_name(),
+				'qty'              => (float) $item->get_quantity(),
+				'total'            => (float) $item->get_total(),
+				'is_gift'          => $is_gift,
+				'will_be_replaced' => $provider === 'yookassa'
+					? ( MP_RRGC_Settings::yk_only_gift_lines() ? $is_gift : true )
+					: ( MP_RRGC_Settings::rb_only_gift_lines() ? $is_gift : true ),
+			);
+		}
+
+		$was_truncated = false;
+		if ( count( $preview_items ) > 50 ) {
+			$preview_items = array_slice( $preview_items, 0, 50 );
+			$was_truncated = true;
+		}
+
+		$response = array(
+			'order_found'   => true,
+			'order_id'      => $order_id,
+			'provider'      => $provider,
+			'detection'     => array(
+				'mode'          => MP_RRGC_Settings::get_detection_mode(),
+				'gift_count'    => count( $split['gift'] ),
+				'regular_count' => count( $split['regular'] ),
+			),
+			'should_process'=> MP_RRGC_Orchestrator::should_process_order(
+				$order,
+				$provider,
+				$provider === 'yookassa' ? array( 'yookassa' ) : array( 'robokassa' )
+			),
+			'preview'       => array(
+				'items'          => $preview_items,
+				'truncated'      => $was_truncated,
+				'max_items'      => 50,
+			),
+		);
+
+		if ( 'yookassa' === $provider ) {
+			$response['replacement'] = array(
+				'payment_mode'      => MP_RRGC_Settings::get_yk_payment_mode(),
+				'payment_subject'   => MP_RRGC_Settings::get_yk_payment_subject(),
+				'description_tmpl'  => MP_RRGC_Settings::get_yk_description_template(),
+				'apply_shipping'    => MP_RRGC_Settings::yk_apply_to_shipping(),
+				'only_gift_lines'   => MP_RRGC_Settings::yk_only_gift_lines(),
+				'force_override'    => MP_RRGC_Settings::yk_force_override(),
+			);
+		} else {
+			$response['replacement'] = array(
+				'payment_method'    => MP_RRGC_Settings::get_rb_payment_method(),
+				'payment_object'    => MP_RRGC_Settings::get_rb_payment_object(),
+				'name_tmpl'         => MP_RRGC_Settings::get_rb_name_template(),
+				'tax_override'      => MP_RRGC_Settings::get_rb_tax_override(),
+				'apply_shipping'    => MP_RRGC_Settings::rb_apply_to_shipping(),
+				'only_gift_lines'   => MP_RRGC_Settings::rb_only_gift_lines(),
+				'force_override'    => MP_RRGC_Settings::rb_force_override(),
+			);
+		}
+
+		wp_send_json_success( $response );
 	}
 }
 
