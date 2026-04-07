@@ -19,6 +19,15 @@ final class MP_RRGC_Settings {
 	public const OPTION_YK_ENABLED = 'mp_rrgc_yk_enabled';
 	public const OPTION_RB_ENABLED = 'mp_rrgc_rb_enabled';
 
+	// YooKassa override options (gift card).
+	public const OPTION_YK_PAYMENT_MODE          = 'mp_rrgc_yk_payment_mode';
+	public const OPTION_YK_PAYMENT_SUBJECT       = 'mp_rrgc_yk_payment_subject';
+	public const OPTION_YK_DESCRIPTION_TEMPLATE  = 'mp_rrgc_yk_description_template';
+	public const OPTION_YK_VAT_CODE_OVERRIDE     = 'mp_rrgc_yk_vat_code_override';
+	public const OPTION_YK_APPLY_TO_SHIPPING     = 'mp_rrgc_yk_apply_to_shipping';
+	public const OPTION_YK_ONLY_GIFT_LINES       = 'mp_rrgc_yk_only_gift_lines';
+	public const OPTION_YK_FORCE_OVERRIDE        = 'mp_rrgc_yk_force_override';
+
 	public const OPTION_DETECTION_MODE     = 'mp_rrgc_detection_mode';
 	public const OPTION_GIFT_PRODUCT_IDS   = 'mp_rrgc_gift_product_ids';
 	public const OPTION_GIFT_CATEGORY_IDS  = 'mp_rrgc_gift_category_ids';
@@ -56,6 +65,129 @@ final class MP_RRGC_Settings {
 
 	public static function is_rb_enabled(): bool {
 		return self::truthy_option( self::OPTION_RB_ENABLED, false );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public static function allowed_payment_modes_yk(): array {
+		// Matches YooKassa Receipt API common set (and is aligned with existing receipt2 plugins).
+		return array(
+			'advance',
+			'credit',
+			'credit_payment',
+			'full_payment',
+			'full_prepayment',
+			'partial_payment',
+			'partial_prepayment',
+		);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public static function allowed_payment_subjects_yk(): array {
+		// Matches YooKassa Receipt API common set (and is aligned with existing receipt2 plugins).
+		return array(
+			'agent_commission',
+			'another',
+			'commodity',
+			'composite',
+			'excise',
+			'gambling_bet',
+			'gambling_prize',
+			'intellectual_activity',
+			'job',
+			'lottery',
+			'lottery_prize',
+			'payment',
+			'service',
+		);
+	}
+
+	public static function get_yk_payment_mode(): string {
+		$value = (string) get_option( self::OPTION_YK_PAYMENT_MODE, 'advance' );
+		$value = sanitize_key( $value );
+
+		if ( ! in_array( $value, self::allowed_payment_modes_yk(), true ) ) {
+			return 'advance';
+		}
+
+		return $value;
+	}
+
+	public static function get_yk_payment_subject(): string {
+		$value = (string) get_option( self::OPTION_YK_PAYMENT_SUBJECT, 'payment' );
+		$value = sanitize_key( $value );
+
+		if ( ! in_array( $value, self::allowed_payment_subjects_yk(), true ) ) {
+			return 'payment';
+		}
+
+		return $value;
+	}
+
+	public static function get_yk_description_template(): string {
+		$template = (string) get_option( self::OPTION_YK_DESCRIPTION_TEMPLATE, '' );
+		$template = sanitize_text_field( $template );
+
+		// Hard cap to keep payload reasonable; exact limit will be enforced by gateway later.
+		if ( strlen( $template ) > 512 ) {
+			$template = substr( $template, 0, 512 );
+		}
+
+		return (string) $template;
+	}
+
+	public static function get_yk_vat_code_override(): string {
+		$vat = (string) get_option( self::OPTION_YK_VAT_CODE_OVERRIDE, '' );
+		$vat = sanitize_key( $vat );
+		return (string) $vat;
+	}
+
+	public static function yk_apply_to_shipping(): bool {
+		return self::truthy_option( self::OPTION_YK_APPLY_TO_SHIPPING, false );
+	}
+
+	public static function yk_only_gift_lines(): bool {
+		return self::truthy_option( self::OPTION_YK_ONLY_GIFT_LINES, true );
+	}
+
+	public static function yk_force_override(): bool {
+		return self::truthy_option( self::OPTION_YK_FORCE_OVERRIDE, false );
+	}
+
+	/**
+	 * Validate YooKassa-related config without any network calls.
+	 *
+	 * @return string[] list of error messages (not escaped).
+	 */
+	public static function validate_yk_rules(): array {
+		$errors = array();
+
+		$mode = self::get_yk_payment_mode();
+		if ( '' === $mode ) {
+			$errors[] = 'YooKassa: payment_mode is empty.';
+		}
+
+		$subject = self::get_yk_payment_subject();
+		if ( '' === $subject ) {
+			$errors[] = 'YooKassa: payment_subject is empty.';
+		}
+
+		// If user explicitly set invalid values, getters already fallback to defaults.
+		// Still, for diagnostics we can warn if stored values are non-empty but invalid.
+		$raw_mode = sanitize_key( (string) get_option( self::OPTION_YK_PAYMENT_MODE, '' ) );
+		if ( '' !== $raw_mode && ! in_array( $raw_mode, self::allowed_payment_modes_yk(), true ) ) {
+			$errors[] = 'YooKassa: stored payment_mode value is not allowed.';
+		}
+
+		$raw_subject = sanitize_key( (string) get_option( self::OPTION_YK_PAYMENT_SUBJECT, '' ) );
+		if ( '' !== $raw_subject && ! in_array( $raw_subject, self::allowed_payment_subjects_yk(), true ) ) {
+			$errors[] = 'YooKassa: stored payment_subject value is not allowed.';
+		}
+
+		return $errors;
 	}
 
 	public static function get_detection_mode(): string {
