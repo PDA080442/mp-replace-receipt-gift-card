@@ -242,12 +242,89 @@ final class MP_RRGC_Admin {
 	}
 
 	private static function render_tab_yookassa(): void {
+		$enabled           = MP_RRGC_Settings::is_yk_enabled();
+		$payment_mode      = MP_RRGC_Settings::get_yk_payment_mode();
+		$payment_subject   = MP_RRGC_Settings::get_yk_payment_subject();
+		$template          = MP_RRGC_Settings::get_yk_description_template();
+		$vat_override      = MP_RRGC_Settings::get_yk_vat_code_override();
+		$apply_to_shipping = MP_RRGC_Settings::yk_apply_to_shipping();
+		$only_gift_lines   = MP_RRGC_Settings::yk_only_gift_lines();
+		$force_override    = MP_RRGC_Settings::yk_force_override();
+		$errors            = MP_RRGC_Settings::validate_yk_rules();
+
 		echo '<h2>' . esc_html__( 'YooKassa', 'mp-replace-receipt-gift-card' ) . '</h2>';
-		echo '<p>' . esc_html__( 'This section will contain first receipt override settings for YooKassa.', 'mp-replace-receipt-gift-card' ) . '</p>';
 		echo '<form method="post" action="options.php">';
 		settings_fields( self::GROUP_YK );
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'YooKassa enabled', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Enable YooKassa replacements', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row"><label for="mp-rrgc-yk-payment-mode">' . esc_html__( 'payment_mode', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><select id="mp-rrgc-yk-payment-mode" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_PAYMENT_MODE ) . '">';
+		foreach ( MP_RRGC_Settings::allowed_payment_modes_yk() as $mode ) {
+			echo '<option value="' . esc_attr( $mode ) . '" ' . selected( $payment_mode, $mode, false ) . '>' . esc_html( $mode ) . '</option>';
+		}
+		echo '</select></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row"><label for="mp-rrgc-yk-payment-subject">' . esc_html__( 'payment_subject', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><select id="mp-rrgc-yk-payment-subject" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_PAYMENT_SUBJECT ) . '">';
+		foreach ( MP_RRGC_Settings::allowed_payment_subjects_yk() as $subject ) {
+			echo '<option value="' . esc_attr( $subject ) . '" ' . selected( $payment_subject, $subject, false ) . '>' . esc_html( $subject ) . '</option>';
+		}
+		echo '</select></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row"><label for="mp-rrgc-yk-description-template">' . esc_html__( 'Description template', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-yk-description-template" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_DESCRIPTION_TEMPLATE ) . '" value="' . esc_attr( $template ) . '" placeholder="%order_number% Gift card">';
+		echo '<p class="description">' . esc_html__( 'Supports placeholders: %order_id%, %order_number%, %line_no%.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row"><label for="mp-rrgc-yk-vat-override">' . esc_html__( 'VAT override (optional)', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-yk-vat-override" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_VAT_CODE_OVERRIDE ) . '" value="' . esc_attr( $vat_override ) . '" placeholder="1"></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Apply to shipping', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_APPLY_TO_SHIPPING ) . '" value="1" ' . checked( $apply_to_shipping, true, false ) . '> ' . esc_html__( 'Replace shipping line as well', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Only gift lines', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_ONLY_GIFT_LINES ) . '" value="1" ' . checked( $only_gift_lines, true, false ) . '> ' . esc_html__( 'Apply replacement only to gift-card lines', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Force override', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_FORCE_OVERRIDE ) . '" value="1" ' . checked( $force_override, true, false ) . '> ' . esc_html__( 'Override existing values even if they are already set', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '</tbody></table>';
 		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Save settings', 'mp-replace-receipt-gift-card' ) . '</button></p>';
 		echo '</form>';
+
+		echo '<hr />';
+		echo '<h3>' . esc_html__( 'Preflight', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		if ( empty( $errors ) ) {
+			echo '<p><span style="color:#2271b1;font-weight:600;">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'YooKassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
+		} else {
+			echo '<p><span style="color:#b32d2e;font-weight:600;">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<ul>';
+			foreach ( $errors as $error ) {
+				echo '<li>' . esc_html( (string) $error ) . '</li>';
+			}
+			echo '</ul>';
+		}
+
+		echo '<h3>' . esc_html__( 'Order inspector (preview)', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Inspector UI is reserved for later steps (AJAX/local payload preview).', 'mp-replace-receipt-gift-card' ) . '</p>';
 	}
 
 	private static function render_tab_robokassa(): void {
