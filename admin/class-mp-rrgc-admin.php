@@ -40,8 +40,8 @@ final class MP_RRGC_Admin {
 	public static function register_menu(): void {
 		add_submenu_page(
 			'woocommerce',
-			__( 'Replace Gift Card Receipt', 'mp-replace-receipt-gift-card' ),
-			__( 'Replace Gift Receipt', 'mp-replace-receipt-gift-card' ),
+			__( 'Подмена первого чека Gift Card', 'mp-replace-receipt-gift-card' ),
+			__( 'Gift Card: подмена чека', 'mp-replace-receipt-gift-card' ),
 			'manage_woocommerce',
 			self::PAGE_SLUG,
 			array( __CLASS__, 'render_page' )
@@ -83,14 +83,14 @@ final class MP_RRGC_Admin {
 
 	public static function render_page(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_die( esc_html__( 'Access denied.', 'mp-replace-receipt-gift-card' ) );
+			wp_die( esc_html__( 'Доступ запрещен.', 'mp-replace-receipt-gift-card' ) );
 		}
 
 		$active_tab = self::get_active_tab();
 		$tabs       = self::get_tabs();
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'MP Replace Receipt Gift Card', 'mp-replace-receipt-gift-card' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'MP: Подмена первого чека Gift Card', 'mp-replace-receipt-gift-card' ) . '</h1>';
 		echo '<h2 class="nav-tab-wrapper">';
 		foreach ( $tabs as $tab_key => $tab_label ) {
 			$url   = admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&tab=' . rawurlencode( $tab_key ) );
@@ -127,10 +127,10 @@ final class MP_RRGC_Admin {
 	 */
 	private static function get_tabs(): array {
 		return array(
-			'common'      => __( 'Common', 'mp-replace-receipt-gift-card' ),
+			'common'      => __( 'Общие', 'mp-replace-receipt-gift-card' ),
 			'yookassa'    => __( 'YooKassa', 'mp-replace-receipt-gift-card' ),
 			'robokassa'   => __( 'Robokassa', 'mp-replace-receipt-gift-card' ),
-			'diagnostics' => __( 'Diagnostics', 'mp-replace-receipt-gift-card' ),
+			'diagnostics' => __( 'Диагностика', 'mp-replace-receipt-gift-card' ),
 		);
 	}
 
@@ -156,7 +156,6 @@ final class MP_RRGC_Admin {
 		$gift_product_type   = MP_RRGC_Settings::get_gift_product_type();
 		$only_gift_only      = MP_RRGC_Settings::only_if_order_is_gift_only();
 		$allow_mixed_cart    = MP_RRGC_Settings::allow_mixed_cart();
-		$selected_gateways   = MP_RRGC_Settings::get_allowed_gateways();
 		$hook_priority       = MP_RRGC_Settings::get_hook_priority();
 		$categories          = get_terms(
 			array(
@@ -164,25 +163,24 @@ final class MP_RRGC_Admin {
 				'hide_empty' => false,
 			)
 		);
-		$available_gateways  = self::get_available_gateway_options();
 
-		echo '<h2>' . esc_html__( 'Common Settings', 'mp-replace-receipt-gift-card' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Общие настройки', 'mp-replace-receipt-gift-card' ) . '</h2>';
 		echo '<form method="post" action="options.php">';
 		settings_fields( self::GROUP_COMMON );
 		echo '<table class="form-table" role="presentation"><tbody>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Plugin enabled', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Enable plugin runtime', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Плагин включен', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Включить рабочую логику плагина', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Debug log', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_DEBUG ) . '" value="1" ' . checked( $debug, true, false ) . '> ' . esc_html__( 'Enable DEBUG level logging', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Debug-лог', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_DEBUG ) . '" value="1" ' . checked( $debug, true, false ) . '> ' . esc_html__( 'Включить логирование уровня DEBUG', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row"><label for="mp-rrgc-detection-mode">' . esc_html__( 'Gift-card detection mode', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-detection-mode">' . esc_html__( 'Режим определения gift card', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td>';
 		echo '<select id="mp-rrgc-detection-mode" name="' . esc_attr( MP_RRGC_Settings::OPTION_DETECTION_MODE ) . '">';
 		foreach ( MP_RRGC_Settings::allowed_detection_modes() as $mode ) {
@@ -193,13 +191,13 @@ final class MP_RRGC_Admin {
 		echo '</tr>';
 
 		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-product_ids">';
-		echo '<th scope="row"><label for="mp-rrgc-gift-product-ids">' . esc_html__( 'Gift product IDs', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-gift-product-ids">' . esc_html__( 'ID gift-товаров', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-gift-product-ids" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_PRODUCT_IDS ) . '" value="' . esc_attr( $gift_product_ids ) . '" placeholder="12,34,56">';
-		echo '<p class="description">' . esc_html__( 'Comma-separated WooCommerce product IDs.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '<p class="description">' . esc_html__( 'ID товаров WooCommerce через запятую.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
 		echo '</tr>';
 
 		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-category">';
-		echo '<th scope="row">' . esc_html__( 'Gift categories', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<th scope="row">' . esc_html__( 'Категории gift card', 'mp-replace-receipt-gift-card' ) . '</th>';
 		echo '<td><select multiple size="6" style="min-width:280px;" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_CATEGORY_IDS ) . '[]">';
 		if ( ! is_wp_error( $categories ) && is_array( $categories ) ) {
 			foreach ( $categories as $cat ) {
@@ -215,50 +213,38 @@ final class MP_RRGC_Admin {
 		echo '</tr>';
 
 		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-meta">';
-		echo '<th scope="row"><label for="mp-rrgc-meta-key">' . esc_html__( 'Gift meta key', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-meta-key">' . esc_html__( 'Meta key gift card', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-meta-key" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_META_KEY ) . '" value="' . esc_attr( $gift_meta_key ) . '"></td>';
 		echo '</tr>';
 
 		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-meta">';
-		echo '<th scope="row"><label for="mp-rrgc-meta-value">' . esc_html__( 'Gift meta value (optional)', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-meta-value">' . esc_html__( 'Meta value gift card (опционально)', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-meta-value" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_META_VALUE ) . '" value="' . esc_attr( $gift_meta_value ) . '"></td>';
 		echo '</tr>';
 
 		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-product_type">';
-		echo '<th scope="row"><label for="mp-rrgc-product-type">' . esc_html__( 'Gift product type', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-product-type">' . esc_html__( 'Тип gift-товара', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-product-type" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_PRODUCT_TYPE ) . '" value="' . esc_attr( $gift_product_type ) . '" placeholder="gift_card"></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Gift-only orders only', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ONLY_GIFT_ONLY ) . '" value="1" ' . checked( $only_gift_only, true, false ) . '> ' . esc_html__( 'Process only orders containing gift-card items and nothing else', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Только gift-заказы', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ONLY_GIFT_ONLY ) . '" value="1" ' . checked( $only_gift_only, true, false ) . '> ' . esc_html__( 'Обрабатывать только заказы, где есть только gift-card позиции', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Allow mixed cart', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ALLOW_MIXED_CART ) . '" value="1" ' . checked( $allow_mixed_cart, true, false ) . '> ' . esc_html__( 'Allow replacements when order has both gift and regular items', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Разрешить mixed cart', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ALLOW_MIXED_CART ) . '" value="1" ' . checked( $allow_mixed_cart, true, false ) . '> ' . esc_html__( 'Разрешить подмену, когда в заказе есть и gift, и обычные товары', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Allowed gateways', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><select multiple size="6" style="min-width:280px;" name="' . esc_attr( MP_RRGC_Settings::OPTION_ALLOWED_GATEWAYS ) . '[]">';
-		foreach ( $available_gateways as $gateway_id => $gateway_label ) {
-			echo '<option value="' . esc_attr( $gateway_id ) . '" ' . selected( in_array( $gateway_id, $selected_gateways, true ), true, false ) . '>';
-			echo esc_html( $gateway_label . ' (' . $gateway_id . ')' );
-			echo '</option>';
-		}
-		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'Leave empty to allow any gateway.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
-		echo '</tr>';
-
-		echo '<tr>';
-		echo '<th scope="row"><label for="mp-rrgc-hook-priority">' . esc_html__( 'Hook priority', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-hook-priority">' . esc_html__( 'Приоритет hook', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-hook-priority" class="small-text" type="number" min="1" max="9999" name="' . esc_attr( MP_RRGC_Settings::OPTION_HOOK_PRIORITY ) . '" value="' . esc_attr( (string) $hook_priority ) . '">';
-		echo '<p class="description">' . esc_html__( 'Used for YooKassa/Robokassa receipt filters. Increase if another plugin overrides values after this plugin.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '<p class="description">' . esc_html__( 'Используется в фильтрах чека YooKassa/Robokassa. Увеличьте, если другой плагин перезаписывает значения после этого плагина.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
 		echo '</tr>';
 
 		echo '</tbody></table>';
-		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Save settings', 'mp-replace-receipt-gift-card' ) . '</button></p>';
+		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Сохранить настройки', 'mp-replace-receipt-gift-card' ) . '</button></p>';
 		echo '</form>';
 	}
 
@@ -267,7 +253,6 @@ final class MP_RRGC_Admin {
 		$payment_mode      = MP_RRGC_Settings::get_yk_payment_mode();
 		$payment_subject   = MP_RRGC_Settings::get_yk_payment_subject();
 		$template          = MP_RRGC_Settings::get_yk_description_template();
-		$vat_override      = MP_RRGC_Settings::get_yk_vat_code_override();
 		$apply_to_shipping = MP_RRGC_Settings::yk_apply_to_shipping();
 		$only_gift_lines   = MP_RRGC_Settings::yk_only_gift_lines();
 		$force_override    = MP_RRGC_Settings::yk_force_override();
@@ -279,8 +264,8 @@ final class MP_RRGC_Admin {
 		echo '<table class="form-table" role="presentation"><tbody>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'YooKassa enabled', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Enable YooKassa replacements', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'YooKassa включена', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Включить подмену для YooKassa', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
@@ -302,41 +287,36 @@ final class MP_RRGC_Admin {
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row"><label for="mp-rrgc-yk-description-template">' . esc_html__( 'Description template', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<th scope="row"><label for="mp-rrgc-yk-description-template">' . esc_html__( 'Шаблон описания', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-yk-description-template" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_DESCRIPTION_TEMPLATE ) . '" value="' . esc_attr( $template ) . '" placeholder="%order_number% Gift card">';
-		echo '<p class="description">' . esc_html__( 'Supports placeholders: %order_id%, %order_number%, %line_no%.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '<p class="description">' . esc_html__( 'Поддерживает плейсхолдеры: %order_id%, %order_number%, %line_no%.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row"><label for="mp-rrgc-yk-vat-override">' . esc_html__( 'VAT override (optional)', 'mp-replace-receipt-gift-card' ) . '</label></th>';
-		echo '<td><input id="mp-rrgc-yk-vat-override" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_VAT_CODE_OVERRIDE ) . '" value="' . esc_attr( $vat_override ) . '" placeholder="1"></td>';
+		echo '<th scope="row">' . esc_html__( 'Применять к shipping', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_APPLY_TO_SHIPPING ) . '" value="1" ' . checked( $apply_to_shipping, true, false ) . '> ' . esc_html__( 'Подменять также строку доставки', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Apply to shipping', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_APPLY_TO_SHIPPING ) . '" value="1" ' . checked( $apply_to_shipping, true, false ) . '> ' . esc_html__( 'Replace shipping line as well', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Только gift-строки', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_ONLY_GIFT_LINES ) . '" value="1" ' . checked( $only_gift_lines, true, false ) . '> ' . esc_html__( 'Применять подмену только к gift-card строкам', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Only gift lines', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_ONLY_GIFT_LINES ) . '" value="1" ' . checked( $only_gift_lines, true, false ) . '> ' . esc_html__( 'Apply replacement only to gift-card lines', 'mp-replace-receipt-gift-card' ) . '</label></td>';
-		echo '</tr>';
-
-		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Force override', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_FORCE_OVERRIDE ) . '" value="1" ' . checked( $force_override, true, false ) . '> ' . esc_html__( 'Override existing values even if they are already set', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Принудительная подмена', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_YK_FORCE_OVERRIDE ) . '" value="1" ' . checked( $force_override, true, false ) . '> ' . esc_html__( 'Перезаписывать значения даже если они уже заданы', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '</tbody></table>';
-		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Save settings', 'mp-replace-receipt-gift-card' ) . '</button></p>';
+		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Сохранить настройки', 'mp-replace-receipt-gift-card' ) . '</button></p>';
 		echo '</form>';
 
 		echo '<hr />';
-		echo '<h3>' . esc_html__( 'Preflight', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Предпроверка', 'mp-replace-receipt-gift-card' ) . '</h3>';
 		if ( empty( $errors ) ) {
-			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--pass">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'YooKassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--pass">' . esc_html__( 'OK', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Настройки YooKassa выглядят корректно.', 'mp-replace-receipt-gift-card' ) . '</p>';
 		} else {
-			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--warn">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--warn">' . esc_html__( 'ВНИМАНИЕ', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Проверьте проблемы конфигурации:', 'mp-replace-receipt-gift-card' ) . '</p>';
 			echo '<ul>';
 			foreach ( $errors as $error ) {
 				echo '<li>' . esc_html( (string) $error ) . '</li>';
@@ -344,16 +324,14 @@ final class MP_RRGC_Admin {
 			echo '</ul>';
 		}
 
-		echo '<h3>' . esc_html__( 'Order inspector (preview)', 'mp-replace-receipt-gift-card' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Inspector UI is reserved for later steps (AJAX/local payload preview).', 'mp-replace-receipt-gift-card' ) . '</p>';
+		echo '<h3>' . esc_html__( 'Инспектор заказа (предпросмотр)', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<p>' . esc_html__( 'UI инспектора будет расширен на следующих шагах (AJAX/локальный preview payload).', 'mp-replace-receipt-gift-card' ) . '</p>';
 	}
 
 	private static function render_tab_robokassa(): void {
 		$enabled           = MP_RRGC_Settings::is_rb_enabled();
 		$payment_method    = MP_RRGC_Settings::get_rb_payment_method();
 		$payment_object    = MP_RRGC_Settings::get_rb_payment_object();
-		$name_template     = MP_RRGC_Settings::get_rb_name_template();
-		$tax_override      = MP_RRGC_Settings::get_rb_tax_override();
 		$apply_to_shipping = MP_RRGC_Settings::rb_apply_to_shipping();
 		$only_gift_lines   = MP_RRGC_Settings::rb_only_gift_lines();
 		$force_override    = MP_RRGC_Settings::rb_force_override();
@@ -365,8 +343,8 @@ final class MP_RRGC_Admin {
 		echo '<table class="form-table" role="presentation"><tbody>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Robokassa enabled', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Enable Robokassa replacements', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Robokassa включена', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Включить подмену для Robokassa', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
@@ -387,42 +365,32 @@ final class MP_RRGC_Admin {
 		echo '</select></td>';
 		echo '</tr>';
 
+
 		echo '<tr>';
-		echo '<th scope="row"><label for="mp-rrgc-rb-name-template">' . esc_html__( 'Name template', 'mp-replace-receipt-gift-card' ) . '</label></th>';
-		echo '<td><input id="mp-rrgc-rb-name-template" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_NAME_TEMPLATE ) . '" value="' . esc_attr( $name_template ) . '" placeholder="%order_number% Gift card">';
-		echo '<p class="description">' . esc_html__( 'Supports placeholders: %order_id%, %order_number%, %line_no%.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '<th scope="row">' . esc_html__( 'Применять к shipping', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_APPLY_TO_SHIPPING ) . '" value="1" ' . checked( $apply_to_shipping, true, false ) . '> ' . esc_html__( 'Подменять также строку доставки', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row"><label for="mp-rrgc-rb-tax-override">' . esc_html__( 'Tax override (optional)', 'mp-replace-receipt-gift-card' ) . '</label></th>';
-		echo '<td><input id="mp-rrgc-rb-tax-override" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_TAX_OVERRIDE ) . '" value="' . esc_attr( $tax_override ) . '" placeholder="vat20"></td>';
+		echo '<th scope="row">' . esc_html__( 'Только gift-строки', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_ONLY_GIFT_LINES ) . '" value="1" ' . checked( $only_gift_lines, true, false ) . '> ' . esc_html__( 'Применять подмену только к gift-card строкам', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Apply to shipping', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_APPLY_TO_SHIPPING ) . '" value="1" ' . checked( $apply_to_shipping, true, false ) . '> ' . esc_html__( 'Replace shipping line as well', 'mp-replace-receipt-gift-card' ) . '</label></td>';
-		echo '</tr>';
-
-		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Only gift lines', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_ONLY_GIFT_LINES ) . '" value="1" ' . checked( $only_gift_lines, true, false ) . '> ' . esc_html__( 'Apply replacement only to gift-card lines', 'mp-replace-receipt-gift-card' ) . '</label></td>';
-		echo '</tr>';
-
-		echo '<tr>';
-		echo '<th scope="row">' . esc_html__( 'Force override', 'mp-replace-receipt-gift-card' ) . '</th>';
-		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_FORCE_OVERRIDE ) . '" value="1" ' . checked( $force_override, true, false ) . '> ' . esc_html__( 'Override existing values even if they are already set', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '<th scope="row">' . esc_html__( 'Принудительная подмена', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_RB_FORCE_OVERRIDE ) . '" value="1" ' . checked( $force_override, true, false ) . '> ' . esc_html__( 'Перезаписывать значения даже если они уже заданы', 'mp-replace-receipt-gift-card' ) . '</label></td>';
 		echo '</tr>';
 
 		echo '</tbody></table>';
-		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Save settings', 'mp-replace-receipt-gift-card' ) . '</button></p>';
+		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Сохранить настройки', 'mp-replace-receipt-gift-card' ) . '</button></p>';
 		echo '</form>';
 
 		echo '<hr />';
-		echo '<h3>' . esc_html__( 'Preflight', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Предпроверка', 'mp-replace-receipt-gift-card' ) . '</h3>';
 		if ( empty( $errors ) ) {
-			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--pass">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Robokassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--pass">' . esc_html__( 'OK', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Настройки Robokassa выглядят корректно.', 'mp-replace-receipt-gift-card' ) . '</p>';
 		} else {
-			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--warn">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--warn">' . esc_html__( 'ВНИМАНИЕ', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Проверьте проблемы конфигурации:', 'mp-replace-receipt-gift-card' ) . '</p>';
 			echo '<ul>';
 			foreach ( $errors as $error ) {
 				echo '<li>' . esc_html( (string) $error ) . '</li>';
@@ -430,29 +398,29 @@ final class MP_RRGC_Admin {
 			echo '</ul>';
 		}
 
-		echo '<h3>' . esc_html__( 'Order inspector (preview)', 'mp-replace-receipt-gift-card' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Inspector UI is reserved for later steps (AJAX/local payload preview).', 'mp-replace-receipt-gift-card' ) . '</p>';
+		echo '<h3>' . esc_html__( 'Инспектор заказа (предпросмотр)', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<p>' . esc_html__( 'UI инспектора будет расширен на следующих шагах (AJAX/локальный preview payload).', 'mp-replace-receipt-gift-card' ) . '</p>';
 	}
 
 	private static function render_tab_diagnostics(): void {
-		echo '<h2>' . esc_html__( 'Diagnostics', 'mp-replace-receipt-gift-card' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Local diagnostics only. No API calls are sent.', 'mp-replace-receipt-gift-card' ) . '</p>';
+		echo '<h2>' . esc_html__( 'Диагностика', 'mp-replace-receipt-gift-card' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Только локальная диагностика. API-вызовы не отправляются.', 'mp-replace-receipt-gift-card' ) . '</p>';
 
 		echo '<table class="form-table" role="presentation"><tbody>';
-		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-product-id">' . esc_html__( 'Inspect product by ID', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-product-id">' . esc_html__( 'Проверить товар по ID', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-inspect-product-id" type="number" min="1" class="regular-text" placeholder="123"> ';
-		echo '<button id="mp-rrgc-inspect-product-btn" type="button" class="button">' . esc_html__( 'Inspect product', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
+		echo '<button id="mp-rrgc-inspect-product-btn" type="button" class="button">' . esc_html__( 'Проверить товар', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
 
-		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-order-yk-id">' . esc_html__( 'Inspect order for YooKassa', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-order-yk-id">' . esc_html__( 'Проверить заказ для YooKassa', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-inspect-order-yk-id" type="number" min="1" class="regular-text" placeholder="1001"> ';
-		echo '<button id="mp-rrgc-inspect-order-yk-btn" type="button" class="button">' . esc_html__( 'Inspect YK order', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
+		echo '<button id="mp-rrgc-inspect-order-yk-btn" type="button" class="button">' . esc_html__( 'Проверить заказ YK', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
 
-		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-order-rb-id">' . esc_html__( 'Inspect order for Robokassa', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<tr><th scope="row"><label for="mp-rrgc-inspect-order-rb-id">' . esc_html__( 'Проверить заказ для Robokassa', 'mp-replace-receipt-gift-card' ) . '</label></th>';
 		echo '<td><input id="mp-rrgc-inspect-order-rb-id" type="number" min="1" class="regular-text" placeholder="1001"> ';
-		echo '<button id="mp-rrgc-inspect-order-rb-btn" type="button" class="button">' . esc_html__( 'Inspect RB order', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
+		echo '<button id="mp-rrgc-inspect-order-rb-btn" type="button" class="button">' . esc_html__( 'Проверить заказ RB', 'mp-replace-receipt-gift-card' ) . '</button></td></tr>';
 		echo '</tbody></table>';
 
-		echo '<h3>' . esc_html__( 'Result', 'mp-replace-receipt-gift-card' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Результат', 'mp-replace-receipt-gift-card' ) . '</h3>';
 		echo '<pre id="mp-rrgc-diagnostics-output"></pre>';
 	}
 
@@ -515,7 +483,6 @@ final class MP_RRGC_Admin {
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_GIFT_PRODUCT_TYPE, array( 'sanitize_callback' => 'sanitize_key' ) );
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_ONLY_GIFT_ONLY, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_ALLOW_MIXED_CART, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
-		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_ALLOWED_GATEWAYS, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_gateways' ) ) );
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_HOOK_PRIORITY, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_hook_priority' ) ) );
 
 		// YooKassa options.
@@ -523,7 +490,6 @@ final class MP_RRGC_Admin {
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_PAYMENT_MODE, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_yk_payment_mode' ) ) );
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_PAYMENT_SUBJECT, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_yk_payment_subject' ) ) );
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_DESCRIPTION_TEMPLATE, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_template' ) ) );
-		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_VAT_CODE_OVERRIDE, array( 'sanitize_callback' => 'sanitize_key' ) );
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_APPLY_TO_SHIPPING, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_ONLY_GIFT_LINES, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_FORCE_OVERRIDE, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
@@ -532,8 +498,6 @@ final class MP_RRGC_Admin {
 		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_ENABLED, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_PAYMENT_METHOD, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_rb_payment_method' ) ) );
 		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_PAYMENT_OBJECT, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_rb_payment_object' ) ) );
-		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_NAME_TEMPLATE, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_template' ) ) );
-		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_TAX_OVERRIDE, array( 'sanitize_callback' => 'sanitize_key' ) );
 		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_APPLY_TO_SHIPPING, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_ONLY_GIFT_LINES, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_RB, MP_RRGC_Settings::OPTION_RB_FORCE_OVERRIDE, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
@@ -565,28 +529,6 @@ final class MP_RRGC_Admin {
 		$items = array_values( array_unique( array_filter( $items ) ) );
 
 		return implode( ',', $items );
-	}
-
-	/**
-	 * @param mixed $value
-	 * @return string[]
-	 */
-	public static function sanitize_gateways( $value ): array {
-		$list = array();
-		if ( is_array( $value ) ) {
-			$list = $value;
-		} elseif ( is_string( $value ) ) {
-			$list = preg_split( '/\s*,\s*/', $value ) ?: array();
-		}
-
-		$list = array_map(
-			static function ( $v ) {
-				return sanitize_key( (string) $v );
-			},
-			$list
-		);
-
-		return array_values( array_unique( array_filter( $list ) ) );
 	}
 
 	/**
@@ -702,35 +644,6 @@ final class MP_RRGC_Admin {
 		}
 
 		return $priority;
-	}
-
-	/**
-	 * @return array<string,string>
-	 */
-	private static function get_available_gateway_options(): array {
-		$result = array();
-
-		if ( function_exists( 'WC' ) && WC() && WC()->payment_gateways() ) {
-			$gateways = WC()->payment_gateways()->payment_gateways();
-			if ( is_array( $gateways ) ) {
-				foreach ( $gateways as $gateway ) {
-					if ( ! is_object( $gateway ) || empty( $gateway->id ) ) {
-						continue;
-					}
-					$id    = sanitize_key( (string) $gateway->id );
-					$title = isset( $gateway->method_title ) ? (string) $gateway->method_title : $id;
-					$result[ $id ] = $title;
-				}
-			}
-		}
-
-		// Helpful aliases used by this plugin even if gateways are not loaded in this request.
-		$result['yookassa']         = isset( $result['yookassa'] ) ? $result['yookassa'] : 'YooKassa';
-		$result['robokassa']        = isset( $result['robokassa'] ) ? $result['robokassa'] : 'Robokassa';
-		$result['robokassa_payment']= isset( $result['robokassa_payment'] ) ? $result['robokassa_payment'] : 'Robokassa Payment';
-
-		ksort( $result );
-		return $result;
 	}
 
 	private static function render_compatibility_notices(): void {
@@ -879,8 +792,6 @@ final class MP_RRGC_Admin {
 			$response['replacement'] = array(
 				'payment_method'    => MP_RRGC_Settings::get_rb_payment_method(),
 				'payment_object'    => MP_RRGC_Settings::get_rb_payment_object(),
-				'name_tmpl'         => MP_RRGC_Settings::get_rb_name_template(),
-				'tax_override'      => MP_RRGC_Settings::get_rb_tax_override(),
 				'apply_shipping'    => MP_RRGC_Settings::rb_apply_to_shipping(),
 				'only_gift_lines'   => MP_RRGC_Settings::rb_only_gift_lines(),
 				'force_override'    => MP_RRGC_Settings::rb_force_override(),

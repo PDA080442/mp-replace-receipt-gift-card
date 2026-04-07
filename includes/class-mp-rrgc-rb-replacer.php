@@ -67,11 +67,9 @@ final class MP_RRGC_RB_Replacer {
 
 		$payment_method    = MP_RRGC_Settings::get_rb_payment_method();
 		$payment_object    = MP_RRGC_Settings::get_rb_payment_object();
-		$name_template     = MP_RRGC_Settings::get_rb_name_template();
 		$only_gift_lines   = MP_RRGC_Settings::rb_only_gift_lines();
 		$force_override    = MP_RRGC_Settings::rb_force_override();
 		$apply_to_shipping = MP_RRGC_Settings::rb_apply_to_shipping();
-		$tax_override      = MP_RRGC_Settings::get_rb_tax_override();
 
 		$changed = 0;
 
@@ -110,14 +108,6 @@ final class MP_RRGC_RB_Replacer {
 			}
 			if ( $force_override || '' === $current_object ) {
 				$item['payment_object'] = $payment_object;
-			}
-
-			if ( '' !== $name_template ) {
-				$item['name'] = self::apply_template( $name_template, $order, $index + 1 );
-			}
-
-			if ( '' !== $tax_override ) {
-				$item['tax'] = $tax_override;
 			}
 
 				$changed++;
@@ -209,21 +199,5 @@ final class MP_RRGC_RB_Replacer {
 		return 1.0 === $qty && ! isset( $item['payment_object'] ) && ! isset( $item['payment_method'] );
 	}
 
-	private static function apply_template( string $template, WC_Order $order, int $line_no ): string {
-		$replace = array(
-			'%order_id%'     => (string) $order->get_id(),
-			'%order_number%' => (string) $order->get_order_number(),
-			'%line_no%'      => (string) $line_no,
-		);
-
-		$result = strtr( $template, $replace );
-		$result = sanitize_text_field( $result );
-
-		if ( strlen( $result ) > 128 ) {
-			$result = substr( $result, 0, 128 );
-		}
-
-		return $result;
-	}
 }
 

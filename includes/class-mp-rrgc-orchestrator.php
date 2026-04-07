@@ -39,25 +39,9 @@ final class MP_RRGC_Orchestrator {
 	 *
 	 * @param WC_Order $order Order object.
 	 * @param string   $gateway_name Logical gateway name ('yookassa'|'robokassa' etc.).
-	 * @param string[] $gateway_aliases Optional list of aliases to match mp_rrgc_gateways option.
+	 * @param string[] $gateway_aliases Reserved for backward compatibility (currently unused).
 	 */
 	public static function should_process_order( WC_Order $order, string $gateway_name, array $gateway_aliases = array() ): bool {
-		$allowed_gateways = MP_RRGC_Settings::get_allowed_gateways();
-		$gateway_names    = self::normalize_gateway_names( $gateway_name, $gateway_aliases );
-
-		if ( ! self::is_gateway_allowed( $allowed_gateways, $gateway_names ) ) {
-			$decision = false;
-			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'should_process_skip_gateway', array(
-				'allowed_gateways' => $allowed_gateways,
-				'gateway'          => $gateway_name,
-			) );
-			return (bool) apply_filters( 'mp_rrgc_should_process_order', $decision, $order, $gateway_name, array(
-				'reason'            => 'gateway_not_allowed',
-				'allowed_gateways'  => $allowed_gateways,
-				'gateway_candidates'=> $gateway_names,
-			) );
-		}
-
 		$split = MP_RRGC_Gift_Detector::split_order_items( $order );
 		$gift_count    = count( $split['gift'] );
 		$regular_count = count( $split['regular'] );
@@ -107,41 +91,6 @@ final class MP_RRGC_Orchestrator {
 			'gift_count'     => $gift_count,
 			'regular_count'  => $regular_count,
 		) );
-	}
-
-	/**
-	 * @param string[] $allowed
-	 * @param string[] $candidates
-	 */
-	private static function is_gateway_allowed( array $allowed, array $candidates ): bool {
-		if ( empty( $allowed ) ) {
-			return true;
-		}
-
-		return ! empty( array_intersect( $allowed, $candidates ) );
-	}
-
-	/**
-	 * @param string   $gateway_name
-	 * @param string[] $aliases
-	 * @return string[]
-	 */
-	private static function normalize_gateway_names( string $gateway_name, array $aliases ): array {
-		$names = array_merge( array( $gateway_name ), $aliases );
-		$names = array_map(
-			static function ( $value ) {
-				return sanitize_key( (string) $value );
-			},
-			$names
-		);
-		$names = array_filter(
-			$names,
-			static function ( $value ) {
-				return '' !== $value;
-			}
-		);
-
-		return array_values( array_unique( $names ) );
 	}
 }
 

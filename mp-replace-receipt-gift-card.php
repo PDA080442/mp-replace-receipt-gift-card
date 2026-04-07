@@ -40,29 +40,7 @@ if ( defined( 'PHP_VERSION_ID' ) && PHP_VERSION_ID < 70400 ) {
 }
 
 add_action(
-	'before_woocommerce_init',
-	static function () {
-		if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
-			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
-				'custom_order_tables',
-				MP_RRGC_PLUGIN_FILE,
-				true
-			);
-		}
-	}
-);
-
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-settings.php';
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-logger.php';
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-gift-detector.php';
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-yk-replacer.php';
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-rb-replacer.php';
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-orchestrator.php';
-require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-replace-receipt-gift-card-plugin.php';
-require_once MP_RRGC_PLUGIN_DIR . 'admin/class-mp-rrgc-admin.php';
-
-add_action(
-	'plugins_loaded',
+	'init',
 	static function () {
 		load_plugin_textdomain(
 			'mp-replace-receipt-gift-card',
@@ -70,14 +48,68 @@ add_action(
 			dirname( plugin_basename( MP_RRGC_PLUGIN_FILE ) ) . '/languages'
 		);
 	},
-	5
+	20
+);
+
+add_action(
+	'before_woocommerce_init',
+	static function () {
+		try {
+			if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+					'custom_order_tables',
+					MP_RRGC_PLUGIN_FILE,
+					true
+				);
+			}
+		} catch ( Throwable $e ) {
+			update_option( 'mp_rrgc_bootstrap_error', 'HPOS declaration failed: ' . $e->getMessage(), false );
+		}
+	}
+);
+
+if ( ! function_exists( 'mp_rrgc_load_classes' ) ) {
+	/**
+	 * Lazy-load classes to avoid activation-time fatals in noisy environments.
+	 */
+	function mp_rrgc_load_classes(): void {
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-settings.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-logger.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-gift-detector.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-yk-replacer.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-rb-replacer.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-orchestrator.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-replace-receipt-gift-card-plugin.php';
+		require_once MP_RRGC_PLUGIN_DIR . 'admin/class-mp-rrgc-admin.php';
+	}
+}
+
+add_action(
+	'admin_notices',
+	static function () {
+		$error = (string) get_option( 'mp_rrgc_bootstrap_error', '' );
+		if ( '' === $error || ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p>';
+		echo esc_html__( 'MP Replace Receipt Gift Card bootstrap error:', 'mp-replace-receipt-gift-card' ) . ' ';
+		echo esc_html( $error );
+		echo '</p></div>';
+	},
+	1
 );
 
 add_action(
 	'plugins_loaded',
 	static function () {
-		MP_Replace_Receipt_Gift_Card_Plugin::init();
+		try {
+			mp_rrgc_load_classes();
+			MP_Replace_Receipt_Gift_Card_Plugin::init();
+			delete_option( 'mp_rrgc_bootstrap_error' );
+		} catch ( Throwable $e ) {
+			update_option( 'mp_rrgc_bootstrap_error', $e->getMessage(), false );
+		}
 	},
-	11
+	20
 );
 

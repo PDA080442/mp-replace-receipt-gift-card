@@ -23,7 +23,6 @@ final class MP_RRGC_Settings {
 	public const OPTION_YK_PAYMENT_MODE          = 'mp_rrgc_yk_payment_mode';
 	public const OPTION_YK_PAYMENT_SUBJECT       = 'mp_rrgc_yk_payment_subject';
 	public const OPTION_YK_DESCRIPTION_TEMPLATE  = 'mp_rrgc_yk_description_template';
-	public const OPTION_YK_VAT_CODE_OVERRIDE     = 'mp_rrgc_yk_vat_code_override';
 	public const OPTION_YK_APPLY_TO_SHIPPING     = 'mp_rrgc_yk_apply_to_shipping';
 	public const OPTION_YK_ONLY_GIFT_LINES       = 'mp_rrgc_yk_only_gift_lines';
 	public const OPTION_YK_FORCE_OVERRIDE        = 'mp_rrgc_yk_force_override';
@@ -31,8 +30,6 @@ final class MP_RRGC_Settings {
 	// Robokassa override options (gift card).
 	public const OPTION_RB_PAYMENT_METHOD     = 'mp_rrgc_rb_payment_method';
 	public const OPTION_RB_PAYMENT_OBJECT     = 'mp_rrgc_rb_payment_object';
-	public const OPTION_RB_NAME_TEMPLATE      = 'mp_rrgc_rb_name_template';
-	public const OPTION_RB_TAX_OVERRIDE       = 'mp_rrgc_rb_tax_override';
 	public const OPTION_RB_APPLY_TO_SHIPPING  = 'mp_rrgc_rb_apply_to_shipping';
 	public const OPTION_RB_ONLY_GIFT_LINES    = 'mp_rrgc_rb_only_gift_lines';
 	public const OPTION_RB_FORCE_OVERRIDE     = 'mp_rrgc_rb_force_override';
@@ -45,7 +42,6 @@ final class MP_RRGC_Settings {
 	public const OPTION_GIFT_PRODUCT_TYPE  = 'mp_rrgc_gift_product_type';
 	public const OPTION_ONLY_GIFT_ONLY     = 'mp_rrgc_only_if_order_is_gift_only';
 	public const OPTION_ALLOW_MIXED_CART   = 'mp_rrgc_allow_mixed_cart';
-	public const OPTION_ALLOWED_GATEWAYS   = 'mp_rrgc_gateways';
 	public const OPTION_HOOK_PRIORITY      = 'mp_rrgc_hook_priority';
 
 	/**
@@ -147,12 +143,6 @@ final class MP_RRGC_Settings {
 		}
 
 		return (string) $template;
-	}
-
-	public static function get_yk_vat_code_override(): string {
-		$vat = (string) get_option( self::OPTION_YK_VAT_CODE_OVERRIDE, '' );
-		$vat = sanitize_key( $vat );
-		return (string) $vat;
 	}
 
 	public static function yk_apply_to_shipping(): bool {
@@ -258,23 +248,6 @@ final class MP_RRGC_Settings {
 		}
 
 		return $value;
-	}
-
-	public static function get_rb_name_template(): string {
-		$template = (string) get_option( self::OPTION_RB_NAME_TEMPLATE, '' );
-		$template = sanitize_text_field( $template );
-
-		if ( strlen( $template ) > 512 ) {
-			$template = substr( $template, 0, 512 );
-		}
-
-		return (string) $template;
-	}
-
-	public static function get_rb_tax_override(): string {
-		$tax = (string) get_option( self::OPTION_RB_TAX_OVERRIDE, '' );
-		$tax = sanitize_key( $tax );
-		return (string) $tax;
 	}
 
 	public static function rb_apply_to_shipping(): bool {
@@ -396,38 +369,6 @@ final class MP_RRGC_Settings {
 		}
 
 		return $priority;
-	}
-
-	/**
-	 * Allowed gateways list. Empty => allow any gateway.
-	 *
-	 * @return string[]
-	 */
-	public static function get_allowed_gateways(): array {
-		$value = get_option( self::OPTION_ALLOWED_GATEWAYS, array() );
-
-		$list = array();
-		if ( is_array( $value ) ) {
-			$list = $value;
-		} elseif ( is_string( $value ) ) {
-			$list = preg_split( '/\s*,\s*/', $value ) ?: array();
-		}
-
-		$list = array_map(
-			static function ( $v ) {
-				return sanitize_key( (string) $v );
-			},
-			$list
-		);
-
-		$list = array_filter(
-			$list,
-			static function ( $v ) {
-				return '' !== $v;
-			}
-		);
-
-		return array_values( array_unique( $list ) );
 	}
 
 	/**
