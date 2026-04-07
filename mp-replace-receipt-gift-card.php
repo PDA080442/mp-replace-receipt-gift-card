@@ -22,6 +22,7 @@ define( 'MP_RRGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-settings.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-gift-detector.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-yk-replacer.php';
+require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-rb-replacer.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-orchestrator.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-replace-receipt-gift-card-plugin.php';
 

@@ -26,6 +26,9 @@ final class MP_RRGC_Orchestrator {
 		if ( MP_RRGC_Settings::is_yk_enabled() && class_exists( 'MP_RRGC_YK_Replacer' ) ) {
 			MP_RRGC_YK_Replacer::register_hooks();
 		}
+		if ( MP_RRGC_Settings::is_rb_enabled() && class_exists( 'MP_RRGC_RB_Replacer' ) ) {
+			MP_RRGC_RB_Replacer::register_hooks();
+		}
 	}
 }
 
