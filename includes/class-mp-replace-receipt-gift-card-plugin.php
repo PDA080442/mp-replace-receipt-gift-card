@@ -14,8 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class MP_Replace_Receipt_Gift_Card_Plugin {
-	public const OPTION_ENABLED = 'mp_rrgc_common_enabled';
-
 	/** @var bool */
 	private static $booted = false;
 
@@ -35,8 +33,7 @@ final class MP_Replace_Receipt_Gift_Card_Plugin {
 		}
 
 		// Master switch (defaults to disabled until admin UI is implemented in later steps).
-		$enabled = (string) get_option( self::OPTION_ENABLED, '0' );
-		if ( '1' !== $enabled && 'yes' !== $enabled ) {
+		if ( ! MP_RRGC_Settings::is_enabled() ) {
 			return;
 		}
 

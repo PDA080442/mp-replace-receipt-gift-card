@@ -19,6 +19,7 @@ define( 'MP_REPLACE_RECEIPT_GIFT_CARD_VERSION', '0.0.1' );
 define( 'MP_RRGC_PLUGIN_FILE', __FILE__ );
 define( 'MP_RRGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
+require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-settings.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-orchestrator.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-replace-receipt-gift-card-plugin.php';
 
