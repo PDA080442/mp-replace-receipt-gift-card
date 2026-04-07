@@ -28,6 +28,15 @@ final class MP_RRGC_Settings {
 	public const OPTION_YK_ONLY_GIFT_LINES       = 'mp_rrgc_yk_only_gift_lines';
 	public const OPTION_YK_FORCE_OVERRIDE        = 'mp_rrgc_yk_force_override';
 
+	// Robokassa override options (gift card).
+	public const OPTION_RB_PAYMENT_METHOD     = 'mp_rrgc_rb_payment_method';
+	public const OPTION_RB_PAYMENT_OBJECT     = 'mp_rrgc_rb_payment_object';
+	public const OPTION_RB_NAME_TEMPLATE      = 'mp_rrgc_rb_name_template';
+	public const OPTION_RB_TAX_OVERRIDE       = 'mp_rrgc_rb_tax_override';
+	public const OPTION_RB_APPLY_TO_SHIPPING  = 'mp_rrgc_rb_apply_to_shipping';
+	public const OPTION_RB_ONLY_GIFT_LINES    = 'mp_rrgc_rb_only_gift_lines';
+	public const OPTION_RB_FORCE_OVERRIDE     = 'mp_rrgc_rb_force_override';
+
 	public const OPTION_DETECTION_MODE     = 'mp_rrgc_detection_mode';
 	public const OPTION_GIFT_PRODUCT_IDS   = 'mp_rrgc_gift_product_ids';
 	public const OPTION_GIFT_CATEGORY_IDS  = 'mp_rrgc_gift_category_ids';
@@ -185,6 +194,126 @@ final class MP_RRGC_Settings {
 		$raw_subject = sanitize_key( (string) get_option( self::OPTION_YK_PAYMENT_SUBJECT, '' ) );
 		if ( '' !== $raw_subject && ! in_array( $raw_subject, self::allowed_payment_subjects_yk(), true ) ) {
 			$errors[] = 'YooKassa: stored payment_subject value is not allowed.';
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public static function allowed_payment_methods_rb(): array {
+		// Mirrors the same fiscal set used in existing receipt2 integrations.
+		return array(
+			'advance',
+			'credit',
+			'credit_payment',
+			'full_payment',
+			'full_prepayment',
+			'partial_payment',
+			'partial_prepayment',
+		);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public static function allowed_payment_objects_rb(): array {
+		// Mirrors common fiscal object values from current integrations.
+		return array(
+			'agent_commission',
+			'another',
+			'commodity',
+			'composite',
+			'excise',
+			'gambling_bet',
+			'gambling_prize',
+			'intellectual_activity',
+			'job',
+			'lottery',
+			'lottery_prize',
+			'payment',
+			'service',
+		);
+	}
+
+	public static function get_rb_payment_method(): string {
+		$value = (string) get_option( self::OPTION_RB_PAYMENT_METHOD, 'advance' );
+		$value = sanitize_key( $value );
+
+		if ( ! in_array( $value, self::allowed_payment_methods_rb(), true ) ) {
+			return 'advance';
+		}
+
+		return $value;
+	}
+
+	public static function get_rb_payment_object(): string {
+		$value = (string) get_option( self::OPTION_RB_PAYMENT_OBJECT, 'payment' );
+		$value = sanitize_key( $value );
+
+		if ( ! in_array( $value, self::allowed_payment_objects_rb(), true ) ) {
+			return 'payment';
+		}
+
+		return $value;
+	}
+
+	public static function get_rb_name_template(): string {
+		$template = (string) get_option( self::OPTION_RB_NAME_TEMPLATE, '' );
+		$template = sanitize_text_field( $template );
+
+		if ( strlen( $template ) > 512 ) {
+			$template = substr( $template, 0, 512 );
+		}
+
+		return (string) $template;
+	}
+
+	public static function get_rb_tax_override(): string {
+		$tax = (string) get_option( self::OPTION_RB_TAX_OVERRIDE, '' );
+		$tax = sanitize_key( $tax );
+		return (string) $tax;
+	}
+
+	public static function rb_apply_to_shipping(): bool {
+		return self::truthy_option( self::OPTION_RB_APPLY_TO_SHIPPING, false );
+	}
+
+	public static function rb_only_gift_lines(): bool {
+		return self::truthy_option( self::OPTION_RB_ONLY_GIFT_LINES, true );
+	}
+
+	public static function rb_force_override(): bool {
+		return self::truthy_option( self::OPTION_RB_FORCE_OVERRIDE, false );
+	}
+
+	/**
+	 * Validate Robokassa-related config without network calls.
+	 *
+	 * @return string[] list of error messages (not escaped).
+	 */
+	public static function validate_rb_rules(): array {
+		$errors = array();
+
+		$method = self::get_rb_payment_method();
+		if ( '' === $method ) {
+			$errors[] = 'Robokassa: payment_method is empty.';
+		}
+
+		$object = self::get_rb_payment_object();
+		if ( '' === $object ) {
+			$errors[] = 'Robokassa: payment_object is empty.';
+		}
+
+		$raw_method = sanitize_key( (string) get_option( self::OPTION_RB_PAYMENT_METHOD, '' ) );
+		if ( '' !== $raw_method && ! in_array( $raw_method, self::allowed_payment_methods_rb(), true ) ) {
+			$errors[] = 'Robokassa: stored payment_method value is not allowed.';
+		}
+
+		$raw_object = sanitize_key( (string) get_option( self::OPTION_RB_PAYMENT_OBJECT, '' ) );
+		if ( '' !== $raw_object && ! in_array( $raw_object, self::allowed_payment_objects_rb(), true ) ) {
+			$errors[] = 'Robokassa: stored payment_object value is not allowed.';
 		}
 
 		return $errors;
