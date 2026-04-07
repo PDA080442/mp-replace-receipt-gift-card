@@ -1,0 +1,32 @@
+<?php
+/**
+ * Plugin Name: MP Replace Receipt Gift Card
+ * Description: Replaces first receipt fields for gift card purchases (YooKassa + Robokassa) in WooCommerce.
+ * Version: 0.0.1
+ * Requires at least: 5.8
+ * Requires PHP: 7.4
+ * Author: MP
+ * Text Domain: mp-replace-receipt-gift-card
+ *
+ * @package MP_Replace_Receipt_Gift_Card
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+define( 'MP_REPLACE_RECEIPT_GIFT_CARD_VERSION', '0.0.1' );
+define( 'MP_RRGC_PLUGIN_FILE', __FILE__ );
+define( 'MP_RRGC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+
+require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-orchestrator.php';
+require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-replace-receipt-gift-card-plugin.php';
+
+add_action(
+	'plugins_loaded',
+	static function () {
+		MP_Replace_Receipt_Gift_Card_Plugin::init();
+	},
+	11
+);
+

@@ -1,0 +1,64 @@
+<?php
+/**
+ * Bootstrap for MP Replace Receipt Gift Card.
+ *
+ * Scope:
+ * - This plugin ONLY modifies payload/fields for the FIRST receipt (when it is being built by gateways).
+ * - It does NOT send any receipts by itself and does NOT implement "second receipt" logic.
+ *
+ * @package MP_Replace_Receipt_Gift_Card
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+final class MP_Replace_Receipt_Gift_Card_Plugin {
+	public const OPTION_ENABLED = 'mp_rrgc_common_enabled';
+
+	/** @var bool */
+	private static $booted = false;
+
+	public static function init(): void {
+		if ( self::$booted ) {
+			return;
+		}
+
+		self::$booted = true;
+
+		// WooCommerce is required to run runtime logic.
+		if ( ! self::is_woocommerce_active() ) {
+			if ( is_admin() ) {
+				add_action( 'admin_notices', array( __CLASS__, 'render_admin_notice_woocommerce_missing' ) );
+			}
+			return;
+		}
+
+		// Master switch (defaults to disabled until admin UI is implemented in later steps).
+		$enabled = (string) get_option( self::OPTION_ENABLED, '0' );
+		if ( '1' !== $enabled && 'yes' !== $enabled ) {
+			return;
+		}
+
+		// Single facade for registering all runtime hooks.
+		MP_RRGC_Orchestrator::init_hooks();
+	}
+
+	private static function is_woocommerce_active(): bool {
+		return class_exists( 'WooCommerce' ) && class_exists( 'WC_Order' ) && class_exists( 'WC_Product' );
+	}
+
+	public static function render_admin_notice_woocommerce_missing(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		echo '<div class="notice notice-warning"><p>';
+		echo esc_html__(
+			'MP Replace Receipt Gift Card: WooCommerce is not active. The plugin will not run until WooCommerce is installed and activated.',
+			'mp-replace-receipt-gift-card'
+		);
+		echo '</p></div>';
+	}
+}
+
