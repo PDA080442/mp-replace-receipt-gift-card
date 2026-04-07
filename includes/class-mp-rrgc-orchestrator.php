@@ -23,8 +23,9 @@ final class MP_RRGC_Orchestrator {
 
 		self::$hooks_inited = true;
 
-		// Step 0: intentionally empty.
-		// Later steps will register gateway-specific filters here.
+		if ( MP_RRGC_Settings::is_yk_enabled() && class_exists( 'MP_RRGC_YK_Replacer' ) ) {
+			MP_RRGC_YK_Replacer::register_hooks();
+		}
 	}
 }
 
