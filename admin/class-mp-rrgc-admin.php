@@ -15,6 +15,7 @@ final class MP_RRGC_Admin {
 	private const GROUP_YK     = 'mp_rrgc_yk_group';
 	private const GROUP_RB     = 'mp_rrgc_rb_group';
 	private const AJAX_NONCE_ACTION = 'mp_rrgc_admin_ajax';
+	private const DIAGNOSTICS_MAX_ITEMS = 50;
 
 	/** @var bool */
 	private static $inited = false;
@@ -789,10 +790,14 @@ final class MP_RRGC_Admin {
 	}
 
 	private static function assert_ajax_permissions(): void {
+		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) ) {
+			wp_send_json_error( array( 'error' => 'method_not_allowed' ), 405 );
+		}
 		check_ajax_referer( self::AJAX_NONCE_ACTION, 'nonce' );
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_send_json_error( array( 'error' => 'forbidden' ), 403 );
 		}
+		nocache_headers();
 	}
 
 	private static function ajax_inspect_order_common( string $provider ): void {
@@ -821,9 +826,10 @@ final class MP_RRGC_Admin {
 				continue;
 			}
 			$is_gift = isset( $gift_map[ (int) $item_id ] );
+			$product = $item->get_product();
 			$preview_items[] = array(
 				'item_id'          => (int) $item_id,
-				'name'             => $item->get_name(),
+				'product_id'       => $product instanceof WC_Product ? (int) $product->get_id() : 0,
 				'qty'              => (float) $item->get_quantity(),
 				'total'            => (float) $item->get_total(),
 				'is_gift'          => $is_gift,
@@ -834,8 +840,8 @@ final class MP_RRGC_Admin {
 		}
 
 		$was_truncated = false;
-		if ( count( $preview_items ) > 50 ) {
-			$preview_items = array_slice( $preview_items, 0, 50 );
+		if ( count( $preview_items ) > self::DIAGNOSTICS_MAX_ITEMS ) {
+			$preview_items = array_slice( $preview_items, 0, self::DIAGNOSTICS_MAX_ITEMS );
 			$was_truncated = true;
 		}
 
@@ -856,7 +862,7 @@ final class MP_RRGC_Admin {
 			'preview'       => array(
 				'items'          => $preview_items,
 				'truncated'      => $was_truncated,
-				'max_items'      => 50,
+				'max_items'      => self::DIAGNOSTICS_MAX_ITEMS,
 			),
 		);
 
