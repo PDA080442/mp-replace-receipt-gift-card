@@ -1,2 +1,55 @@
-/* Step 1: placeholder. Admin styles will be implemented in later steps. */
+.mp-rrgc-section {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	padding: 16px 20px;
+	margin-top: 12px;
+}
+
+.mp-rrgc-section h2 {
+	margin-top: 0;
+}
+
+.mp-rrgc-section hr {
+	margin: 20px 0;
+	border: 0;
+	border-top: 1px solid #dcdcde;
+}
+
+.mp-rrgc-section .form-table th {
+	width: 260px;
+}
+
+.mp-rrgc-section .description {
+	color: #646970;
+}
+
+#mp-rrgc-diagnostics-output {
+	max-height: 420px;
+	overflow: auto;
+	background: #f6f7f7;
+	border: 1px solid #ccd0d4;
+	padding: 12px;
+	margin-top: 8px;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.mp-rrgc-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 12px;
+	line-height: 18px;
+	font-weight: 600;
+}
+
+.mp-rrgc-badge--pass {
+	background: #e7f5ea;
+	color: #0a7f38;
+}
+
+.mp-rrgc-badge--warn {
+	background: #fbeaea;
+	color: #b32d2e;
+}
 

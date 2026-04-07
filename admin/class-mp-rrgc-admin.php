@@ -325,9 +325,9 @@ final class MP_RRGC_Admin {
 		echo '<hr />';
 		echo '<h3>' . esc_html__( 'Preflight', 'mp-replace-receipt-gift-card' ) . '</h3>';
 		if ( empty( $errors ) ) {
-			echo '<p><span style="color:#2271b1;font-weight:600;">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'YooKassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--pass">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'YooKassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
 		} else {
-			echo '<p><span style="color:#b32d2e;font-weight:600;">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--warn">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
 			echo '<ul>';
 			foreach ( $errors as $error ) {
 				echo '<li>' . esc_html( (string) $error ) . '</li>';
@@ -411,9 +411,9 @@ final class MP_RRGC_Admin {
 		echo '<hr />';
 		echo '<h3>' . esc_html__( 'Preflight', 'mp-replace-receipt-gift-card' ) . '</h3>';
 		if ( empty( $errors ) ) {
-			echo '<p><span style="color:#2271b1;font-weight:600;">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Robokassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--pass">' . esc_html__( 'PASS', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Robokassa settings look valid.', 'mp-replace-receipt-gift-card' ) . '</p>';
 		} else {
-			echo '<p><span style="color:#b32d2e;font-weight:600;">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
+			echo '<p><span class="mp-rrgc-badge mp-rrgc-badge--warn">' . esc_html__( 'WARN', 'mp-replace-receipt-gift-card' ) . '</span> - ' . esc_html__( 'Please check configuration issues:', 'mp-replace-receipt-gift-card' ) . '</p>';
 			echo '<ul>';
 			foreach ( $errors as $error ) {
 				echo '<li>' . esc_html( (string) $error ) . '</li>';
@@ -444,7 +444,7 @@ final class MP_RRGC_Admin {
 		echo '</tbody></table>';
 
 		echo '<h3>' . esc_html__( 'Result', 'mp-replace-receipt-gift-card' ) . '</h3>';
-		echo '<pre id="mp-rrgc-diagnostics-output" style="max-height:420px;overflow:auto;background:#fff;border:1px solid #ccd0d4;padding:12px;"></pre>';
+		echo '<pre id="mp-rrgc-diagnostics-output"></pre>';
 	}
 
 	public static function ajax_inspect_product(): void {
