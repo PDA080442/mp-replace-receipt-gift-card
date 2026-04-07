@@ -37,6 +37,14 @@ final class MP_RRGC_RB_Replacer {
 			return $receipt;
 		}
 
+		if ( ! MP_RRGC_Orchestrator::should_process_order(
+			$order,
+			'robokassa',
+			array( 'robokassa', 'robokassa_payment', 'wc_robokassa' )
+		) ) {
+			return $receipt;
+		}
+
 		$split = MP_RRGC_Gift_Detector::split_order_items( $order );
 		if ( empty( $split['gift'] ) ) {
 			return $receipt;

@@ -42,6 +42,14 @@ final class MP_RRGC_YK_Replacer {
 			return $payment_request;
 		}
 
+		if ( ! MP_RRGC_Orchestrator::should_process_order(
+			$order,
+			'yookassa',
+			array( 'yookassa', 'yookassa_widget', 'yookassa_b2b_sberbank', 'yookassa_epl' )
+		) ) {
+			return $payment_request;
+		}
+
 		$split = MP_RRGC_Gift_Detector::split_order_items( $order );
 		if ( empty( $split['gift'] ) ) {
 			return $payment_request;
