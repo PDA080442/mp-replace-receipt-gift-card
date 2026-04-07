@@ -132,10 +132,111 @@ final class MP_RRGC_Admin {
 	}
 
 	private static function render_tab_common(): void {
+		$enabled             = MP_RRGC_Settings::is_enabled();
+		$debug               = MP_RRGC_Settings::is_debug_enabled();
+		$detection_mode      = MP_RRGC_Settings::get_detection_mode();
+		$gift_product_ids    = implode( ',', MP_RRGC_Settings::get_gift_product_ids() );
+		$gift_category_ids   = MP_RRGC_Settings::get_gift_category_ids();
+		$gift_meta_key       = MP_RRGC_Settings::get_gift_meta_key();
+		$gift_meta_value     = MP_RRGC_Settings::get_gift_meta_value();
+		$gift_product_type   = MP_RRGC_Settings::get_gift_product_type();
+		$only_gift_only      = MP_RRGC_Settings::only_if_order_is_gift_only();
+		$allow_mixed_cart    = MP_RRGC_Settings::allow_mixed_cart();
+		$selected_gateways   = MP_RRGC_Settings::get_allowed_gateways();
+		$categories          = get_terms(
+			array(
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+			)
+		);
+		$available_gateways  = self::get_available_gateway_options();
+
 		echo '<h2>' . esc_html__( 'Common Settings', 'mp-replace-receipt-gift-card' ) . '</h2>';
-		echo '<p>' . esc_html__( 'This section will contain global plugin options and gift-card detection settings.', 'mp-replace-receipt-gift-card' ) . '</p>';
 		echo '<form method="post" action="options.php">';
 		settings_fields( self::GROUP_COMMON );
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Plugin enabled', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ENABLED ) . '" value="1" ' . checked( $enabled, true, false ) . '> ' . esc_html__( 'Enable plugin runtime', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Debug log', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_DEBUG ) . '" value="1" ' . checked( $debug, true, false ) . '> ' . esc_html__( 'Enable DEBUG level logging', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row"><label for="mp-rrgc-detection-mode">' . esc_html__( 'Gift-card detection mode', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td>';
+		echo '<select id="mp-rrgc-detection-mode" name="' . esc_attr( MP_RRGC_Settings::OPTION_DETECTION_MODE ) . '">';
+		foreach ( MP_RRGC_Settings::allowed_detection_modes() as $mode ) {
+			echo '<option value="' . esc_attr( $mode ) . '" ' . selected( $detection_mode, $mode, false ) . '>' . esc_html( $mode ) . '</option>';
+		}
+		echo '</select>';
+		echo '</td>';
+		echo '</tr>';
+
+		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-product_ids">';
+		echo '<th scope="row"><label for="mp-rrgc-gift-product-ids">' . esc_html__( 'Gift product IDs', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-gift-product-ids" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_PRODUCT_IDS ) . '" value="' . esc_attr( $gift_product_ids ) . '" placeholder="12,34,56">';
+		echo '<p class="description">' . esc_html__( 'Comma-separated WooCommerce product IDs.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '</tr>';
+
+		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-category">';
+		echo '<th scope="row">' . esc_html__( 'Gift categories', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><select multiple size="6" style="min-width:280px;" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_CATEGORY_IDS ) . '[]">';
+		if ( ! is_wp_error( $categories ) && is_array( $categories ) ) {
+			foreach ( $categories as $cat ) {
+				if ( ! $cat instanceof WP_Term ) {
+					continue;
+				}
+				echo '<option value="' . esc_attr( (string) $cat->term_id ) . '" ' . selected( in_array( (int) $cat->term_id, $gift_category_ids, true ), true, false ) . '>';
+				echo esc_html( $cat->name . ' (#' . $cat->term_id . ')' );
+				echo '</option>';
+			}
+		}
+		echo '</select></td>';
+		echo '</tr>';
+
+		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-meta">';
+		echo '<th scope="row"><label for="mp-rrgc-meta-key">' . esc_html__( 'Gift meta key', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-meta-key" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_META_KEY ) . '" value="' . esc_attr( $gift_meta_key ) . '"></td>';
+		echo '</tr>';
+
+		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-meta">';
+		echo '<th scope="row"><label for="mp-rrgc-meta-value">' . esc_html__( 'Gift meta value (optional)', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-meta-value" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_META_VALUE ) . '" value="' . esc_attr( $gift_meta_value ) . '"></td>';
+		echo '</tr>';
+
+		echo '<tr class="mp-rrgc-detection mp-rrgc-detection-product_type">';
+		echo '<th scope="row"><label for="mp-rrgc-product-type">' . esc_html__( 'Gift product type', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-product-type" class="regular-text" type="text" name="' . esc_attr( MP_RRGC_Settings::OPTION_GIFT_PRODUCT_TYPE ) . '" value="' . esc_attr( $gift_product_type ) . '" placeholder="gift_card"></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Gift-only orders only', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ONLY_GIFT_ONLY ) . '" value="1" ' . checked( $only_gift_only, true, false ) . '> ' . esc_html__( 'Process only orders containing gift-card items and nothing else', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Allow mixed cart', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><label><input type="checkbox" name="' . esc_attr( MP_RRGC_Settings::OPTION_ALLOW_MIXED_CART ) . '" value="1" ' . checked( $allow_mixed_cart, true, false ) . '> ' . esc_html__( 'Allow replacements when order has both gift and regular items', 'mp-replace-receipt-gift-card' ) . '</label></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row">' . esc_html__( 'Allowed gateways', 'mp-replace-receipt-gift-card' ) . '</th>';
+		echo '<td><select multiple size="6" style="min-width:280px;" name="' . esc_attr( MP_RRGC_Settings::OPTION_ALLOWED_GATEWAYS ) . '[]">';
+		foreach ( $available_gateways as $gateway_id => $gateway_label ) {
+			echo '<option value="' . esc_attr( $gateway_id ) . '" ' . selected( in_array( $gateway_id, $selected_gateways, true ), true, false ) . '>';
+			echo esc_html( $gateway_label . ' (' . $gateway_id . ')' );
+			echo '</option>';
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Leave empty to allow any gateway.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '</tr>';
+
+		echo '</tbody></table>';
 		echo '<p><button class="button button-primary" type="submit">' . esc_html__( 'Save settings', 'mp-replace-receipt-gift-card' ) . '</button></p>';
 		echo '</form>';
 	}
@@ -348,6 +449,35 @@ final class MP_RRGC_Admin {
 			$value = substr( $value, 0, 512 );
 		}
 		return $value;
+	}
+
+	/**
+	 * @return array<string,string>
+	 */
+	private static function get_available_gateway_options(): array {
+		$result = array();
+
+		if ( function_exists( 'WC' ) && WC() && WC()->payment_gateways() ) {
+			$gateways = WC()->payment_gateways()->payment_gateways();
+			if ( is_array( $gateways ) ) {
+				foreach ( $gateways as $gateway ) {
+					if ( ! is_object( $gateway ) || empty( $gateway->id ) ) {
+						continue;
+					}
+					$id    = sanitize_key( (string) $gateway->id );
+					$title = isset( $gateway->method_title ) ? (string) $gateway->method_title : $id;
+					$result[ $id ] = $title;
+				}
+			}
+		}
+
+		// Helpful aliases used by this plugin even if gateways are not loaded in this request.
+		$result['yookassa']         = isset( $result['yookassa'] ) ? $result['yookassa'] : 'YooKassa';
+		$result['robokassa']        = isset( $result['robokassa'] ) ? $result['robokassa'] : 'Robokassa';
+		$result['robokassa_payment']= isset( $result['robokassa_payment'] ) ? $result['robokassa_payment'] : 'Robokassa Payment';
+
+		ksort( $result );
+		return $result;
 	}
 }
 

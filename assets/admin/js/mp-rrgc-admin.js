@@ -1,5 +1,15 @@
 (function ($) {
 	'use strict';
-	// Step 1: placeholder. Admin UI logic will be implemented in later steps.
+
+	function updateDetectionModeFields() {
+		var mode = $('#mp-rrgc-detection-mode').val() || '';
+		$('.mp-rrgc-detection').hide();
+		$('.mp-rrgc-detection-' + mode).show();
+	}
+
+	$(function () {
+		updateDetectionModeFields();
+		$('#mp-rrgc-detection-mode').on('change', updateDetectionModeFields);
+	});
 })(jQuery);
 
