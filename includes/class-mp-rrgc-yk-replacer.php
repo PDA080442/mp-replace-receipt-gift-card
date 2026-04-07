@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class MP_RRGC_YK_Replacer {
+	/** @var array<string,bool> */
+	private static $seen_requests = array();
+
 	public static function register_hooks(): void {
 		$priority = MP_RRGC_Settings::get_hook_priority();
 		add_filter(
@@ -25,6 +28,11 @@ final class MP_RRGC_YK_Replacer {
 	 * @return mixed
 	 */
 	public static function maybe_replace_receipt_data( $payment_request ) {
+		$request_hash = is_object( $payment_request ) ? spl_object_hash( $payment_request ) : '';
+		if ( '' !== $request_hash && isset( self::$seen_requests[ $request_hash ] ) ) {
+			return $payment_request;
+		}
+
 		if ( ! MP_RRGC_Settings::is_enabled() || ! MP_RRGC_Settings::is_yk_enabled() ) {
 			return $payment_request;
 		}
@@ -76,7 +84,8 @@ final class MP_RRGC_YK_Replacer {
 
 		$changed = 0;
 
-		foreach ( $items as $index => $receipt_item ) {
+		try {
+			foreach ( $items as $index => $receipt_item ) {
 			if ( ! is_object( $receipt_item ) ) {
 				continue;
 			}
@@ -122,7 +131,14 @@ final class MP_RRGC_YK_Replacer {
 				$receipt_item->setDescription( self::apply_template( $template, $order, $index + 1 ) );
 			}
 
-			$changed++;
+				$changed++;
+			}
+		} catch ( Throwable $e ) {
+			MP_RRGC_Logger::log( 'ERROR', (int) $order->get_id(), 'replace_failed_fallback_original', array(
+				'provider' => 'yookassa',
+				'message'  => $e->getMessage(),
+			) );
+			return $payment_request;
 		}
 
 		/**
@@ -151,6 +167,9 @@ final class MP_RRGC_YK_Replacer {
 			'apply_to_shipping' => $apply_to_shipping,
 			'force_override'    => $force_override,
 		) );
+		if ( '' !== $request_hash ) {
+			self::$seen_requests[ $request_hash ] = true;
+		}
 
 		return $payment_request;
 	}

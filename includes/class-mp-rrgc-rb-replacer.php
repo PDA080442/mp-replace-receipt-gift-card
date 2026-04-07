@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class MP_RRGC_RB_Replacer {
+	/** @var array<string,bool> */
+	private static $seen_receipts = array();
+
 	public static function register_hooks(): void {
 		$priority = MP_RRGC_Settings::get_hook_priority();
 		add_filter(
@@ -25,6 +28,11 @@ final class MP_RRGC_RB_Replacer {
 	 * @return mixed
 	 */
 	public static function maybe_replace_receipt_data( $receipt ) {
+		$receipt_hash = is_array( $receipt ) ? md5( wp_json_encode( $receipt ) ?: '' ) : '';
+		if ( '' !== $receipt_hash && isset( self::$seen_receipts[ $receipt_hash ] ) ) {
+			return $receipt;
+		}
+
 		if ( ! MP_RRGC_Settings::is_enabled() || ! MP_RRGC_Settings::is_rb_enabled() ) {
 			return $receipt;
 		}
@@ -67,7 +75,9 @@ final class MP_RRGC_RB_Replacer {
 
 		$changed = 0;
 
-		foreach ( $receipt['items'] as $index => &$item ) {
+		$original_receipt = $receipt;
+		try {
+			foreach ( $receipt['items'] as $index => &$item ) {
 			if ( ! is_array( $item ) ) {
 				continue;
 			}
@@ -110,7 +120,14 @@ final class MP_RRGC_RB_Replacer {
 				$item['tax'] = $tax_override;
 			}
 
-			$changed++;
+				$changed++;
+			}
+		} catch ( Throwable $e ) {
+			MP_RRGC_Logger::log( 'ERROR', (int) $order->get_id(), 'replace_failed_fallback_original', array(
+				'provider' => 'robokassa',
+				'message'  => $e->getMessage(),
+			) );
+			return $original_receipt;
 		}
 		unset( $item );
 
@@ -140,6 +157,9 @@ final class MP_RRGC_RB_Replacer {
 			'apply_to_shipping' => $apply_to_shipping,
 			'force_override'    => $force_override,
 		) );
+		if ( '' !== $receipt_hash ) {
+			self::$seen_receipts[ $receipt_hash ] = true;
+		}
 
 		return $receipt;
 	}
