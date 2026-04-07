@@ -99,6 +99,7 @@ final class MP_RRGC_Admin {
 		echo '</h2>';
 
 		settings_errors();
+		self::render_compatibility_notices();
 
 		echo '<div class="mp-rrgc-section">';
 		switch ( $active_tab ) {
@@ -155,6 +156,7 @@ final class MP_RRGC_Admin {
 		$only_gift_only      = MP_RRGC_Settings::only_if_order_is_gift_only();
 		$allow_mixed_cart    = MP_RRGC_Settings::allow_mixed_cart();
 		$selected_gateways   = MP_RRGC_Settings::get_allowed_gateways();
+		$hook_priority       = MP_RRGC_Settings::get_hook_priority();
 		$categories          = get_terms(
 			array(
 				'taxonomy'   => 'product_cat',
@@ -246,6 +248,12 @@ final class MP_RRGC_Admin {
 		}
 		echo '</select>';
 		echo '<p class="description">' . esc_html__( 'Leave empty to allow any gateway.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
+		echo '</tr>';
+
+		echo '<tr>';
+		echo '<th scope="row"><label for="mp-rrgc-hook-priority">' . esc_html__( 'Hook priority', 'mp-replace-receipt-gift-card' ) . '</label></th>';
+		echo '<td><input id="mp-rrgc-hook-priority" class="small-text" type="number" min="1" max="9999" name="' . esc_attr( MP_RRGC_Settings::OPTION_HOOK_PRIORITY ) . '" value="' . esc_attr( (string) $hook_priority ) . '">';
+		echo '<p class="description">' . esc_html__( 'Used for YooKassa/Robokassa receipt filters. Increase if another plugin overrides values after this plugin.', 'mp-replace-receipt-gift-card' ) . '</p></td>';
 		echo '</tr>';
 
 		echo '</tbody></table>';
@@ -507,6 +515,7 @@ final class MP_RRGC_Admin {
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_ONLY_GIFT_ONLY, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_ALLOW_MIXED_CART, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
 		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_ALLOWED_GATEWAYS, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_gateways' ) ) );
+		register_setting( self::GROUP_COMMON, MP_RRGC_Settings::OPTION_HOOK_PRIORITY, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_hook_priority' ) ) );
 
 		// YooKassa options.
 		register_setting( self::GROUP_YK, MP_RRGC_Settings::OPTION_YK_ENABLED, array( 'sanitize_callback' => array( __CLASS__, 'sanitize_bool' ) ) );
@@ -677,6 +686,24 @@ final class MP_RRGC_Admin {
 	}
 
 	/**
+	 * @param mixed $value
+	 * @return int
+	 */
+	public static function sanitize_hook_priority( $value ): int {
+		$priority = absint( $value );
+		if ( $priority < 1 || $priority > 9999 ) {
+			add_settings_error(
+				self::GROUP_COMMON,
+				'mp_rrgc_invalid_hook_priority',
+				esc_html__( 'Invalid hook priority. Fallback to 999.', 'mp-replace-receipt-gift-card' )
+			);
+			return 999;
+		}
+
+		return $priority;
+	}
+
+	/**
 	 * @return array<string,string>
 	 */
 	private static function get_available_gateway_options(): array {
@@ -703,6 +730,62 @@ final class MP_RRGC_Admin {
 
 		ksort( $result );
 		return $result;
+	}
+
+	private static function render_compatibility_notices(): void {
+		$active = self::get_active_plugin_basenames();
+		$conflicts = array();
+
+		foreach ( $active as $basename ) {
+			if ( false !== strpos( $basename, 'mp-yookassa-receipt2' ) ) {
+				$conflicts[] = 'mp-yookassa-receipt2';
+			}
+			if ( false !== strpos( $basename, 'mp_robokassa_receipt2' ) ) {
+				$conflicts[] = 'mp_robokassa_receipt2';
+			}
+			if ( false !== strpos( $basename, 'mp-marked-products-receipt' ) ) {
+				$conflicts[] = 'mp-marked-products-receipt';
+			}
+		}
+
+		$conflicts = array_values( array_unique( $conflicts ) );
+		if ( empty( $conflicts ) ) {
+			return;
+		}
+
+		echo '<div class="notice notice-warning inline"><p>';
+		echo esc_html__( 'Compatibility notice: other receipt-related plugins are active and may modify the same payload fields.', 'mp-replace-receipt-gift-card' );
+		echo ' ';
+		echo esc_html( implode( ', ', $conflicts ) );
+		echo '. ';
+		echo esc_html__( 'If needed, adjust "Hook priority" in Common settings.', 'mp-replace-receipt-gift-card' );
+		echo '</p></div>';
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private static function get_active_plugin_basenames(): array {
+		$active = get_option( 'active_plugins', array() );
+		if ( ! is_array( $active ) ) {
+			$active = array();
+		}
+
+		if ( is_multisite() ) {
+			$network = get_site_option( 'active_sitewide_plugins', array() );
+			if ( is_array( $network ) ) {
+				$active = array_merge( $active, array_keys( $network ) );
+			}
+		}
+
+		$active = array_map(
+			static function ( $v ) {
+				return (string) $v;
+			},
+			$active
+		);
+
+		return array_values( array_unique( $active ) );
 	}
 
 	private static function assert_ajax_permissions(): void {

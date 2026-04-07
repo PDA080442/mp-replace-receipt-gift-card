@@ -46,6 +46,7 @@ final class MP_RRGC_Settings {
 	public const OPTION_ONLY_GIFT_ONLY     = 'mp_rrgc_only_if_order_is_gift_only';
 	public const OPTION_ALLOW_MIXED_CART   = 'mp_rrgc_allow_mixed_cart';
 	public const OPTION_ALLOWED_GATEWAYS   = 'mp_rrgc_gateways';
+	public const OPTION_HOOK_PRIORITY      = 'mp_rrgc_hook_priority';
 
 	/**
 	 * @return string[]
@@ -370,6 +371,31 @@ final class MP_RRGC_Settings {
 
 	public static function allow_mixed_cart(): bool {
 		return self::truthy_option( self::OPTION_ALLOW_MIXED_CART, true );
+	}
+
+	public static function get_hook_priority(): int {
+		$priority = absint( get_option( self::OPTION_HOOK_PRIORITY, 999 ) );
+		if ( $priority < 1 ) {
+			$priority = 999;
+		}
+		if ( $priority > 9999 ) {
+			$priority = 9999;
+		}
+
+		/**
+		 * Allows customizing plugin filter priority for receipt replacements.
+		 *
+		 * @param int $priority Filter priority.
+		 */
+		$priority = (int) apply_filters( 'mp_rrgc_hook_priority', $priority );
+		if ( $priority < 1 ) {
+			$priority = 1;
+		}
+		if ( $priority > 9999 ) {
+			$priority = 9999;
+		}
+
+		return $priority;
 	}
 
 	/**

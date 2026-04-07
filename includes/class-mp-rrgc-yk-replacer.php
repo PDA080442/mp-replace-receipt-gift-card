@@ -11,10 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class MP_RRGC_YK_Replacer {
 	public static function register_hooks(): void {
+		$priority = MP_RRGC_Settings::get_hook_priority();
 		add_filter(
 			'woocommerce_yookassa_create_payment_request',
 			array( __CLASS__, 'maybe_replace_receipt_data' ),
-			999,
+			$priority,
 			1
 		);
 	}
