@@ -35,8 +35,15 @@ final class MP_Replace_Receipt_Gift_Card_Plugin {
 
 		// Master switch (defaults to disabled until admin UI is implemented in later steps).
 		if ( ! MP_RRGC_Settings::is_enabled() ) {
+			if ( is_admin() && class_exists( 'MP_RRGC_Admin' ) ) {
+				MP_RRGC_Admin::init();
+			}
 			MP_RRGC_Logger::log( 'DEBUG', 0, 'init_skip_plugin_disabled' );
 			return;
+		}
+
+		if ( is_admin() && class_exists( 'MP_RRGC_Admin' ) ) {
+			MP_RRGC_Admin::init();
 		}
 
 		MP_RRGC_Logger::log( 'INFO', 0, 'init_runtime_hooks' );

@@ -26,6 +26,7 @@ require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-yk-replacer.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-rb-replacer.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-rrgc-orchestrator.php';
 require_once MP_RRGC_PLUGIN_DIR . 'includes/class-mp-replace-receipt-gift-card-plugin.php';
+require_once MP_RRGC_PLUGIN_DIR . 'admin/class-mp-rrgc-admin.php';
 
 add_action(
 	'plugins_loaded',
