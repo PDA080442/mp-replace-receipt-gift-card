@@ -44,6 +44,18 @@ require_once MP_RRGC_PLUGIN_DIR . 'admin/class-mp-rrgc-admin.php';
 add_action(
 	'plugins_loaded',
 	static function () {
+		load_plugin_textdomain(
+			'mp-replace-receipt-gift-card',
+			false,
+			dirname( plugin_basename( MP_RRGC_PLUGIN_FILE ) ) . '/languages'
+		);
+	},
+	5
+);
+
+add_action(
+	'plugins_loaded',
+	static function () {
 		MP_Replace_Receipt_Gift_Card_Plugin::init();
 	},
 	11
