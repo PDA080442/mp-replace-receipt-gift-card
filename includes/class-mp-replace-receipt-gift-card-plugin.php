@@ -29,14 +29,17 @@ final class MP_Replace_Receipt_Gift_Card_Plugin {
 			if ( is_admin() ) {
 				add_action( 'admin_notices', array( __CLASS__, 'render_admin_notice_woocommerce_missing' ) );
 			}
+			MP_RRGC_Logger::log( 'ERROR', 0, 'init_skip_woocommerce_missing' );
 			return;
 		}
 
 		// Master switch (defaults to disabled until admin UI is implemented in later steps).
 		if ( ! MP_RRGC_Settings::is_enabled() ) {
+			MP_RRGC_Logger::log( 'DEBUG', 0, 'init_skip_plugin_disabled' );
 			return;
 		}
 
+		MP_RRGC_Logger::log( 'INFO', 0, 'init_runtime_hooks' );
 		// Single facade for registering all runtime hooks.
 		MP_RRGC_Orchestrator::init_hooks();
 	}

@@ -22,12 +22,15 @@ final class MP_RRGC_Orchestrator {
 		}
 
 		self::$hooks_inited = true;
+		MP_RRGC_Logger::log( 'INFO', 0, 'orchestrator_init_hooks' );
 
 		if ( MP_RRGC_Settings::is_yk_enabled() && class_exists( 'MP_RRGC_YK_Replacer' ) ) {
 			MP_RRGC_YK_Replacer::register_hooks();
+			MP_RRGC_Logger::log( 'DEBUG', 0, 'orchestrator_register_yk_hooks' );
 		}
 		if ( MP_RRGC_Settings::is_rb_enabled() && class_exists( 'MP_RRGC_RB_Replacer' ) ) {
 			MP_RRGC_RB_Replacer::register_hooks();
+			MP_RRGC_Logger::log( 'DEBUG', 0, 'orchestrator_register_rb_hooks' );
 		}
 	}
 
@@ -44,6 +47,10 @@ final class MP_RRGC_Orchestrator {
 
 		if ( ! self::is_gateway_allowed( $allowed_gateways, $gateway_names ) ) {
 			$decision = false;
+			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'should_process_skip_gateway', array(
+				'allowed_gateways' => $allowed_gateways,
+				'gateway'          => $gateway_name,
+			) );
 			return (bool) apply_filters( 'mp_rrgc_should_process_order', $decision, $order, $gateway_name, array(
 				'reason'            => 'gateway_not_allowed',
 				'allowed_gateways'  => $allowed_gateways,
@@ -57,6 +64,7 @@ final class MP_RRGC_Orchestrator {
 
 		if ( $gift_count < 1 ) {
 			$decision = false;
+			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'should_process_skip_no_gift', array() );
 			return (bool) apply_filters( 'mp_rrgc_should_process_order', $decision, $order, $gateway_name, array(
 				'reason'         => 'no_gift_items',
 				'gift_count'     => $gift_count,
@@ -66,6 +74,9 @@ final class MP_RRGC_Orchestrator {
 
 		if ( MP_RRGC_Settings::only_if_order_is_gift_only() && $regular_count > 0 ) {
 			$decision = false;
+			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'should_process_skip_requires_gift_only', array(
+				'regular_count' => $regular_count,
+			) );
 			return (bool) apply_filters( 'mp_rrgc_should_process_order', $decision, $order, $gateway_name, array(
 				'reason'         => 'gift_only_required',
 				'gift_count'     => $gift_count,
@@ -75,6 +86,9 @@ final class MP_RRGC_Orchestrator {
 
 		if ( ! MP_RRGC_Settings::allow_mixed_cart() && $regular_count > 0 ) {
 			$decision = false;
+			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'should_process_skip_mixed_disabled', array(
+				'regular_count' => $regular_count,
+			) );
 			return (bool) apply_filters( 'mp_rrgc_should_process_order', $decision, $order, $gateway_name, array(
 				'reason'         => 'mixed_cart_disabled',
 				'gift_count'     => $gift_count,
@@ -83,6 +97,11 @@ final class MP_RRGC_Orchestrator {
 		}
 
 		$decision = true;
+		MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'should_process_ok', array(
+			'gateway'       => $gateway_name,
+			'gift_count'    => $gift_count,
+			'regular_count' => $regular_count,
+		) );
 		return (bool) apply_filters( 'mp_rrgc_should_process_order', $decision, $order, $gateway_name, array(
 			'reason'         => 'ok',
 			'gift_count'     => $gift_count,

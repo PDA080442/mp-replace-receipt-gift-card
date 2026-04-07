@@ -39,6 +39,7 @@ final class MP_RRGC_YK_Replacer {
 
 		$order = self::resolve_order_from_context();
 		if ( ! $order instanceof WC_Order ) {
+			MP_RRGC_Logger::log( 'DEBUG', 0, 'yk_skip_order_not_resolved' );
 			return $payment_request;
 		}
 
@@ -52,6 +53,7 @@ final class MP_RRGC_YK_Replacer {
 
 		$split = MP_RRGC_Gift_Detector::split_order_items( $order );
 		if ( empty( $split['gift'] ) ) {
+			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'yk_skip_no_gift_lines' );
 			return $payment_request;
 		}
 
@@ -141,6 +143,13 @@ final class MP_RRGC_YK_Replacer {
 				'detection_mode'     => MP_RRGC_Settings::get_detection_mode(),
 			)
 		);
+
+		MP_RRGC_Logger::log( 'INFO', (int) $order->get_id(), 'yk_payload_replaced', array(
+			'changed_items'     => $changed,
+			'only_gift_lines'   => $only_gift_lines,
+			'apply_to_shipping' => $apply_to_shipping,
+			'force_override'    => $force_override,
+		) );
 
 		return $payment_request;
 	}

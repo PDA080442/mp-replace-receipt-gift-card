@@ -34,6 +34,7 @@ final class MP_RRGC_RB_Replacer {
 
 		$order = self::resolve_order_from_context();
 		if ( ! $order instanceof WC_Order ) {
+			MP_RRGC_Logger::log( 'DEBUG', 0, 'rb_skip_order_not_resolved' );
 			return $receipt;
 		}
 
@@ -47,6 +48,7 @@ final class MP_RRGC_RB_Replacer {
 
 		$split = MP_RRGC_Gift_Detector::split_order_items( $order );
 		if ( empty( $split['gift'] ) ) {
+			MP_RRGC_Logger::log( 'DEBUG', (int) $order->get_id(), 'rb_skip_no_gift_lines' );
 			return $receipt;
 		}
 
@@ -130,6 +132,13 @@ final class MP_RRGC_RB_Replacer {
 				'detection_mode'     => MP_RRGC_Settings::get_detection_mode(),
 			)
 		);
+
+		MP_RRGC_Logger::log( 'INFO', (int) $order->get_id(), 'rb_payload_replaced', array(
+			'changed_items'     => $changed,
+			'only_gift_lines'   => $only_gift_lines,
+			'apply_to_shipping' => $apply_to_shipping,
+			'force_override'    => $force_override,
+		) );
 
 		return $receipt;
 	}
